@@ -1,6 +1,6 @@
 package Configurations;
 
-public class Configurations {
+public abstract class Configurations {
 
     protected static int SIZE_OF_GRID = 5;
 

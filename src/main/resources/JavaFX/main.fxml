@@ -1,47 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.Cursor?>
+<?import javafx.scene.effect.ColorAdjust?>
 <?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.RowConstraints?>
-<?import javafx.scene.paint.*?>
+<?import javafx.scene.paint.Color?>
+<?import javafx.scene.paint.LinearGradient?>
+<?import javafx.scene.paint.Stop?>
 <?import javafx.scene.text.Font?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="anchorPane" prefHeight="600.0" prefWidth="600.0"
-            style="-fx-background-color: snow;" xmlns="http://javafx.com/javafx/15.0.1"
-            fx:controller="UI.Desktop.MainController">
-    <Label fx:id="label" alignment="CENTER" layoutX="151.0" layoutY="20.0" prefHeight="47.0" prefWidth="298.0"
-           text="Image Recognition App" textAlignment="CENTER">
+
+<AnchorPane fx:id="anchorPane" prefHeight="600.0" prefWidth="600.0" style="-fx-background-color: snow;" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.Desktop.MainController">
+    <Label fx:id="label" alignment="CENTER" layoutX="151.0" layoutY="20.0" prefHeight="47.0" prefWidth="298.0" text="Image Recognition App" textAlignment="CENTER">
         <font>
-            <Font name="Consolas Bold" size="23.0"/>
+            <Font name="Consolas Bold" size="23.0" />
         </font>
         <cursor>
-            <Cursor fx:constant="HAND"/>
+            <Cursor fx:constant="HAND" />
         </cursor>
         <effect>
             <DropShadow height="11.47" radius="5.235" spread="1.0" width="11.47">
                 <color>
-                    <Color red="0.8631790280342102" green="0.7351852059364319" blue="1.0"/>
+                    <Color red="0.8631790280342102" green="0.7351852059364319" blue="1.0" />
                 </color>
             </DropShadow>
         </effect>
     </Label>
-    <Button fx:id="go" alignment="CENTER" layoutX="235.0" layoutY="520.0" mnemonicParsing="false" prefHeight="47.0"
-            prefWidth="130.0" style="-fx-background-radius: 30; -fx-background-color: white;" text="GO!"
-            textAlignment="CENTER">
+    <Button fx:id="go" alignment="CENTER" layoutX="235.0" layoutY="534.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="130.0" style="-fx-background-radius: 30; -fx-background-color: white;" text="GO!" textAlignment="CENTER">
         <font>
-            <Font name="Consolas Bold" size="20.0"/>
+            <Font name="Consolas Bold" size="20.0" />
         </font>
         <cursor>
-            <Cursor fx:constant="HAND"/>
+            <Cursor fx:constant="HAND" />
         </cursor>
         <effect>
             <DropShadow blurType="TWO_PASS_BOX" height="61.51" radius="30.255" spread="0.31" width="61.51">
                 <color>
-                    <Color red="0.4827607274055481" green="0.33213937282562256" blue="0.8342105150222778"/>
+                    <Color red="0.4827607274055481" green="0.33213937282562256" blue="0.8342105150222778" />
                 </color>
             </DropShadow>
         </effect>
@@ -50,26 +49,35 @@
                 <stops>
                     <Stop>
                         <color>
-                            <Color red="0.5333333611488342" blue="1.0"/>
+                            <Color red="0.5333333611488342" blue="1.0" />
                         </color>
                     </Stop>
                     <Stop offset="1.0">
                         <color>
-                            <Color green="0.6166666746139526" blue="1.0"/>
+                            <Color green="0.6166666746139526" blue="1.0" />
                         </color>
                     </Stop>
                 </stops>
             </LinearGradient>
         </textFill>
     </Button>
-    <GridPane fx:id="grid" gridLinesVisible="true" layoutX="25.0" layoutY="87.0" minHeight="-Infinity"
-              minWidth="-Infinity" prefHeight="426.0" prefWidth="549.0">
+    <GridPane fx:id="grid" gridLinesVisible="true" layoutX="25.0" layoutY="87.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="426.0" prefWidth="549.0">
         <columnConstraints>
-            <ColumnConstraints fillWidth="false" halignment="CENTER" hgrow="ALWAYS" maxWidth="-Infinity" minWidth="10.0"
-                               prefWidth="100.0"/>
+            <ColumnConstraints fillWidth="false" halignment="CENTER" hgrow="ALWAYS" maxWidth="-Infinity" minWidth="10.0" prefWidth="100.0" />
         </columnConstraints>
         <rowConstraints>
-            <RowConstraints maxHeight="-Infinity" minHeight="10.0" prefHeight="100.0" vgrow="SOMETIMES"/>
+            <RowConstraints maxHeight="-Infinity" minHeight="10.0" prefHeight="100.0" vgrow="SOMETIMES" />
         </rowConstraints>
     </GridPane>
+   <Button fx:id="closeBtn" layoutX="553.0" layoutY="5.0" mnemonicParsing="false" prefHeight="34.0" prefWidth="42.0" text="✘" textFill="#af25ff">
+      <font>
+         <Font name="System Bold" size="18.0" />
+      </font>
+      <cursor>
+         <Cursor fx:constant="HAND" />
+      </cursor>
+      <effect>
+         <ColorAdjust brightness="0.04" contrast="-0.04" hue="-0.02" saturation="0.11" />
+      </effect>
+   </Button>
 </AnchorPane>

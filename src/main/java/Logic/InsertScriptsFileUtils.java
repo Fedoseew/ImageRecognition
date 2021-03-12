@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -22,7 +23,7 @@ public class InsertScriptsFileUtils {
     public synchronized static void deleteSourceFromInsertScriptsFile(String source, DB_TABLES table,
                                                          boolean isTrue) throws IOException {
 
-        String deletedRow = "INSERT INTO " + table + " VALUES (" + source + ", " + isTrue + ");";
+        String deletedRow = "INSERT INTO " + table + " VALUES ('" + source + "', " + isTrue + ");";
 
         List<String> lines = readInsertScriptsFile();
 

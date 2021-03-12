@@ -6,6 +6,8 @@ import Database.DatabaseUtils;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ImageRecognition {
 
@@ -25,11 +27,15 @@ public class ImageRecognition {
         return result;
     }
 
-    public int recognition(String source) throws SQLException {
+    public Map<DB_TABLES, Integer> recognition(String source) throws SQLException {
 
         Connection connection = DatabaseUtils.getConnection();
+
         BinaryCodeComparator binaryCodeComparator = new BinaryCodeComparator();
+
         String[] queries = generateSQL();
+
+        Map<DB_TABLES, Integer> result = new HashMap<>();
 
         if (!connection.isClosed()) {
 
@@ -43,7 +49,11 @@ public class ImageRecognition {
 
                         if(rs.getString(2).equals("TRUE")) {
 
-                            return i + 1;
+                            DB_TABLES db_table = DB_TABLES.valueOf(queries[i].substring(14));
+
+                            result.put(db_table, i+1);
+
+                            return result;
 
                         } else {
 
@@ -55,6 +65,6 @@ public class ImageRecognition {
             }
         }
 
-        return -1;
+        return result;
     }
 }

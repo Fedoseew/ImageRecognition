@@ -1,24 +1,30 @@
 package UI.Desktop;
 
 import Configurations.ApplicationConfiguration;
+import Database.DB_TABLES;
 import Database.DatabaseUtils;
+import Logic.ImageRecognition;
+import Logic.InsertScriptsFileUtils;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
+import javafx.scene.Node;
+import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.GridPane;
+import javafx.stage.Stage;
 
-import java.net.URL;
+import java.io.IOException;
 import java.sql.SQLException;
-import java.util.ResourceBundle;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
 
 public class MainController {
 
+    private final List<List<Map<Node, Boolean>>> cells = new ArrayList<>();
     @FXML
     AnchorPane anchorPane;
 
@@ -29,9 +35,104 @@ public class MainController {
     private Button go;
 
     @FXML
+    private Button closeBtn;
+
+    @FXML
     void initialize() {
 
         createGrid();
+        connectToDatabase();
+        createGoButtonClickListener();
+
+        closeBtn.setOnMouseClicked(click -> {
+            Stage stage = (Stage)closeBtn.getScene().getWindow();
+            stage.close();
+        });
+
+    }
+
+    private void createGrid() {
+
+        grid.setCursor(Cursor.HAND);
+
+        int sizeOfGrid = ApplicationConfiguration.getSizeOfGrid();
+
+        for (int i = 1; i <= sizeOfGrid; i++) {
+
+            List<Map<Node, Boolean>> row = new ArrayList<>();
+            cells.add(row);
+
+            for (int j = 1; j <= sizeOfGrid; j++) {
+
+                Node cell = createCell();
+                Map<Node, Boolean> map = new HashMap<>();
+                map.put(cell, false);
+                row.add(map);
+                grid.add(cell, j, i);
+
+            }
+        }
+    }
+
+    private Node createCell() {
+
+        ListView<?> cell = new ListView<>();
+
+        cell.setCursor(Cursor.HAND);
+        cell.setStyle("-fx-background-color: inherit");
+        cell.setStyle("-fx-border-color: black");
+
+        cell.setOnMouseClicked(click -> {
+
+            if (cell.getStyle().contains("-fx-background-color: black")) {
+
+                cell.setStyle("-fx-background-color: inherit");
+                setValue(cell, false);
+
+            } else {
+
+                cell.setStyle("-fx-background-color: black");
+                setValue(cell, true);
+
+            }
+        });
+
+        cell.hoverProperty().addListener((ObservableValue<? extends Boolean> observable,
+                                          Boolean oldValue, Boolean newValue) -> {
+
+            if (!cell.getStyle().contains("-fx-background-color: black")) {
+
+                if (newValue) {
+
+                    cell.setStyle("-fx-background-color: #797979");
+
+                } else {
+
+                    cell.setStyle("-fx-background-color: inherit");
+                    cell.setStyle("-fx-border-color: black");
+                }
+            }
+        });
+
+        return cell;
+    }
+
+    private void setValue(Node cell, boolean value) {
+
+        for (List<Map<Node, Boolean>> rows : cells) {
+
+            for (Map<Node, Boolean> map : rows) {
+
+                if (map.containsKey(cell)) {
+
+                    map.replace(cell, value);
+
+                }
+            }
+        }
+    }
+
+    private void connectToDatabase() {
 
         try {
 
@@ -46,46 +147,127 @@ public class MainController {
         }
     }
 
-    private void createGrid() {
+    private void createGoButtonClickListener() {
 
-        grid.setCursor(Cursor.HAND);
+        go.setOnMouseClicked(click -> {
 
-        int sizeOfGrid = ApplicationConfiguration.getSizeOfGrid();
+            ImageRecognition imageRecognition = new ImageRecognition();
 
-        for (int i = 1; i <= sizeOfGrid; i++) {
+            try {
 
-            for (int j = 1; j <= sizeOfGrid; j++) {
+                Map<DB_TABLES, Integer> response = imageRecognition.recognition(parseImageToBinaryCode());
 
-                grid.add(createCell(), i, j);
+                createResponseNotification(response);
 
-            }
-        }
-    }
+                clearAllCells();
 
-    private ListView<?> createCell() {
+            } catch (SQLException | IOException exception) {
 
-        ListView<?> cell = new ListView<>();
-
-        cell.setCursor(Cursor.HAND);
-        cell.setStyle("-fx-background-color: inherit");
-        cell.setStyle("-fx-border-color: black");
-
-        cell.hoverProperty().addListener((ObservableValue<? extends Boolean> observable,
-                                          Boolean oldValue, Boolean newValue) -> {
-            if (newValue) {
-
-                cell.setStyle("-fx-background-color: #797979");
-
-            } else {
-
-                cell.setStyle("-fx-background-color: inherit");
-                cell.setStyle("-fx-border-color: black");
+                Logger.getGlobal().warning(exception.getLocalizedMessage());
+                exception.printStackTrace();
 
             }
         });
+    }
 
-        return cell;
+    private void clearAllCells() {
+
+        cells.forEach(row -> {
+
+            row.forEach(cell -> {
+
+                cell.keySet().forEach(node -> {
+
+                    node.setStyle("-fx-background-color: inherit");
+                    node.setStyle("-fx-border-color: black");
+
+                });
+                cell.entrySet().forEach(entry -> {
+
+                    entry.setValue(false);
+
+                });
+            });
+        });
+    }
+
+    private String parseImageToBinaryCode() {
+
+        StringBuilder stringBuilder = new StringBuilder();
+
+        for (List<Map<Node, Boolean>> rows : cells) {
+
+            for (Map<Node, Boolean> cell : rows) {
+
+                cell.forEach((key, value) -> {
+
+                    if (value.equals(true)) {
+
+                        stringBuilder.append(1);
+
+                    } else {
+
+                        stringBuilder.append(0);
+                    }
+
+                });
+            }
+        }
+        return stringBuilder.toString();
+    }
+
+    private void createResponseNotification(Map<DB_TABLES, Integer> response) throws IOException, SQLException {
+
+        Dialog<ButtonType> responseAlert = new Dialog<>();
+
+        responseAlert.setTitle("Recognition Image App");
+
+        ButtonType YES = new ButtonType("YES!", ButtonBar.ButtonData.YES);
+        ButtonType NO = new ButtonType("NO!", ButtonBar.ButtonData.NO);
+
+        AtomicInteger resultNumber = new AtomicInteger(-1);
+
+        response.forEach((key, value) -> resultNumber.set(value));
+
+        if (resultNumber.get() >= 0) {
+
+            responseAlert.setHeaderText("Recognition completed!");
+            responseAlert.setContentText("Successfully! Your number is " + resultNumber + ", right?");
+
+            responseAlert.getDialogPane().getButtonTypes().add(YES);
+            responseAlert.getDialogPane().getButtonTypes().add(NO);
+
+        } else {
+
+            responseAlert.setHeaderText("Recognition completed!");
+            responseAlert.setContentText("Ooops! Failed to recognize the image :( Try again.");
+            responseAlert.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+
+        }
+
+        Optional<ButtonType> result = responseAlert.showAndWait();
+
+        setListenersOnCloseDialogEvent(result);
+
+    }
+
+    private void setListenersOnCloseDialogEvent(Optional<ButtonType> result) throws SQLException, IOException {
+
+        if (!Objects.isNull(result.get())) {
+
+            if (result.get().getButtonData().equals(ButtonBar.ButtonData.NO)) {
+
+                AtomicReference<DB_TABLES> db_table = new AtomicReference<>();
+
+                new ImageRecognition().recognition(parseImageToBinaryCode())
+                        .forEach((key, value) -> db_table.set(key));
+
+                InsertScriptsFileUtils.deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(),
+                        db_table.get(), true);
+
+                DesktopStarter.restartApplication(go);
+            }
+        }
     }
 }
-
 

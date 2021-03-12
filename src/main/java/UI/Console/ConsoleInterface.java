@@ -1,11 +1,14 @@
 package UI.Console;
 
 import Configurations.ApplicationConfiguration;
+import Database.DB_TABLES;
 import Logic.ImageParserToBinaryCode;
 import Logic.ImageRecognition;
 
 import java.io.*;
 import java.sql.SQLException;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class ConsoleInterface {
 
@@ -96,12 +99,17 @@ public class ConsoleInterface {
                 stringBuilder.append("\n");
             }
         }
-        int resultNumber = imageRecognition.recognition(
+
+        Map<DB_TABLES, Integer> result = imageRecognition.recognition(
                 imageParserToBinaryCode
                         .consoleParserInputNumber(stringBuilder, sizeOfConsoleMatrix, writer)
         );
 
-        if(resultNumber >= 0) {
+        AtomicInteger resultNumber = new AtomicInteger(-1);
+
+        result.forEach((key, value) -> resultNumber.set(value));
+
+        if(resultNumber.get() >= 0) {
 
             System.out.println("\nSuccessfully! Your number is " + resultNumber + ", right?");
 
