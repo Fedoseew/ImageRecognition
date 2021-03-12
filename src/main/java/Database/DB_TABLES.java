@@ -1,4 +1,4 @@
-package Config;
+package Database;
 
 public enum DB_TABLES {
     source_one,

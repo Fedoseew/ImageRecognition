@@ -1,5 +1,6 @@
 package UI.Console;
 
+import Configurations.ApplicationConfiguration;
 import Logic.ImageParserToBinaryCode;
 import Logic.ImageRecognition;
 
@@ -14,7 +15,11 @@ public class ConsoleInterface {
     private final BufferedWriter writer = new BufferedWriter(
             new OutputStreamWriter(System.out));
 
-    private final int sizeOfConsoleMatrix = 5;
+    private final int sizeOfConsoleMatrix;
+
+    public ConsoleInterface() {
+        this.sizeOfConsoleMatrix = ApplicationConfiguration.getSizeOfGrid();
+    }
 
 
     public void start() throws IOException, InterruptedException, SQLException {
@@ -91,10 +96,20 @@ public class ConsoleInterface {
                 stringBuilder.append("\n");
             }
         }
-        imageRecognition.recognition(
+        int resultNumber = imageRecognition.recognition(
                 imageParserToBinaryCode
-                        .parseInputNumber(stringBuilder, sizeOfConsoleMatrix, writer)
+                        .consoleParserInputNumber(stringBuilder, sizeOfConsoleMatrix, writer)
         );
+
+        if(resultNumber >= 0) {
+
+            System.out.println("\nSuccessfully! Your number is " + resultNumber + ", right?");
+
+        } else {
+
+            System.out.println("\nThe recognition process is completed without a result :(" +
+                    " Try a different number.");
+        }
     }
 
     private void generateText() throws IOException {

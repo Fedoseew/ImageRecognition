@@ -1,5 +1,8 @@
 package UI.Console;
 
+import Database.DB_TABLES;
+import Database.DatabaseUtils;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.logging.Logger;

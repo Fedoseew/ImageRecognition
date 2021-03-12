@@ -8,11 +8,17 @@ public class BinaryCodeComparator implements Comparator<String> {
     public int compare(String sourceFromDataBase, String source) {
 
         if(sourceFromDataBase.length() != source.length()) {
+
             return -1;
+
         } else {
+
             for (int i = 0; i < sourceFromDataBase.length(); i++) {
+
                 if (sourceFromDataBase.charAt(i) != source.charAt(i)) {
+
                     return 0;
+
                 }
             }
         }

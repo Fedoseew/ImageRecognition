@@ -5,7 +5,13 @@ import java.io.IOException;
 
 public class ImageParserToBinaryCode {
 
-    public String parseInputNumber(StringBuilder stringBuilder, int sizeOfConsoleMatrix,
+    public String desktopParserInputNumber() {
+        String result = "";
+
+        return result;
+    }
+
+    public String consoleParserInputNumber(StringBuilder stringBuilder, int sizeOfConsoleMatrix,
                                     BufferedWriter writer) throws IOException {
 
         String[] lines = stringBuilder.toString().split("\n");
@@ -44,16 +50,22 @@ public class ImageParserToBinaryCode {
 
         writer.newLine();
         writer.write("Representation in binary code: ");
+
         for(int i=0; i<resultLine.length(); i++) {
+
             if(i != 0 && i % 4 == 0) {
+
                 writer.write(" ");
             }
+
             writer.write(resultLine.charAt(i));
             writer.flush();
         }
+
         writer.write("\n");
         writer.flush();
         writer.newLine();
+
         return resultLine.toString();
     }
 }

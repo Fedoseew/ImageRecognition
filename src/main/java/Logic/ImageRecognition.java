@@ -1,15 +1,12 @@
 package Logic;
 
-import Config.DB_TABLES;
-import Config.DatabaseUtils;
-import org.springframework.stereotype.Component;
+import Database.DB_TABLES;
+import Database.DatabaseUtils;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-@Component
 public class ImageRecognition {
 
     private String[] generateSQL() {
@@ -36,8 +33,6 @@ public class ImageRecognition {
 
         if (!connection.isClosed()) {
 
-            System.out.println("INFO: Successful connection to the database.\n");
-
             for (int i = 0; i < queries.length; i++) {
 
                 ResultSet rs = connection.createStatement().executeQuery(queries[i]);
@@ -45,14 +40,20 @@ public class ImageRecognition {
                 while (rs.next()) {
 
                     if (binaryCodeComparator.compare(rs.getString(1), source) > 0) {
-                        System.out.println("\nSuccessfully! Your number is " + (i + 1) + ", right?");
-                        return i;
+
+                        if(rs.getString(2).equals("TRUE")) {
+
+                            return i + 1;
+
+                        } else {
+
+                            break;
+
+                        }
                     }
                 }
             }
         }
-
-        System.out.println("The recognition process is completed without a result :( Try a different number.");
 
         return -1;
     }
