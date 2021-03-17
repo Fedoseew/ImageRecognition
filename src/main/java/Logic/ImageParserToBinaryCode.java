@@ -5,12 +5,6 @@ import java.io.IOException;
 
 public class ImageParserToBinaryCode {
 
-    public String desktopParserInputNumber() {
-        String result = "";
-
-        return result;
-    }
-
     public String consoleParserInputNumber(StringBuilder stringBuilder, int sizeOfConsoleMatrix,
                                     BufferedWriter writer) throws IOException {
 

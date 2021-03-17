@@ -4,6 +4,10 @@ public class ApplicationConfiguration extends Configurations {
 
     public static int getSizeOfGrid() { return Configurations.SIZE_OF_GRID; }
 
+    public static double getApplicationWindowWidth() { return 800; }
+
+    public static double getApplicationWindowHeight() { return 600; }
+
     public static String[] getDatabaseCredits() { return Configurations.DATABASE_CREDIT; }
 
     public static String getPathToInsertScripts() { return  Configurations.PATH_TO_INSERT_SCRIPT; }

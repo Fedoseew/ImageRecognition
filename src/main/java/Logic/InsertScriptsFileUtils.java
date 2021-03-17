@@ -3,12 +3,11 @@ package Logic;
 import Configurations.ApplicationConfiguration;
 import Database.DB_TABLES;
 
-import java.io.*;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,16 +35,24 @@ public class InsertScriptsFileUtils {
     public synchronized static void writeInsertScriptsFile(String source, DB_TABLES table,
                                               boolean isTrue) throws IOException {
 
-        String SQL = "INSERT INTO " + table + " VALUES (" + source + ", " + isTrue + ");";
+        String SQL = "INSERT INTO " + table + " VALUES ('" + source + "', " + isTrue + ");";
 
         StringBuilder oldScripts = new StringBuilder();
 
+        boolean flag = true;
+
         for(String row : readInsertScriptsFile()) {
 
-            if(row.contains(table.toString())) {
+            if(
+                    row.contains(table.toString())
+                    && row.contains(String.valueOf(isTrue))
+                    && flag
+            ) {
 
-                oldScripts.append("--UPDATE FROM ").append(LocalDateTime.now()).append("--\n");
-                oldScripts.append(SQL).append("\n\n");
+                oldScripts.append("--UPDATED FROM ").append(LocalDateTime.now()).append("--\n");
+                oldScripts.append(SQL).append("\n");
+
+                flag = false;
 
             }
 

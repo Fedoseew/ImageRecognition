@@ -20,11 +20,13 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 
 public class MainController {
 
     private final List<List<Map<Node, Boolean>>> cells = new ArrayList<>();
+
     @FXML
     AnchorPane anchorPane;
 
@@ -45,8 +47,9 @@ public class MainController {
         createGoButtonClickListener();
 
         closeBtn.setOnMouseClicked(click -> {
-            Stage stage = (Stage)closeBtn.getScene().getWindow();
+            Stage stage = (Stage) closeBtn.getScene().getWindow();
             stage.close();
+            Logger.getGlobal().info("APPLICATION STOPPED...");
         });
 
     }
@@ -172,23 +175,16 @@ public class MainController {
 
     private void clearAllCells() {
 
-        cells.forEach(row -> {
+        cells.forEach(row -> row.forEach(cell -> {
 
-            row.forEach(cell -> {
+            cell.keySet().forEach(node -> {
 
-                cell.keySet().forEach(node -> {
+                node.setStyle("-fx-background-color: inherit");
+                node.setStyle("-fx-border-color: black");
 
-                    node.setStyle("-fx-background-color: inherit");
-                    node.setStyle("-fx-border-color: black");
-
-                });
-                cell.entrySet().forEach(entry -> {
-
-                    entry.setValue(false);
-
-                });
             });
-        });
+            cell.entrySet().forEach(entry -> entry.setValue(false));
+        }));
     }
 
     private String parseImageToBinaryCode() {
@@ -247,27 +243,117 @@ public class MainController {
 
         Optional<ButtonType> result = responseAlert.showAndWait();
 
-        setListenersOnCloseDialogEvent(result);
+        if (result.isPresent()) {
+            setListenersOnCloseDialogEvent(result.get());
+        }
 
     }
 
-    private void setListenersOnCloseDialogEvent(Optional<ButtonType> result) throws SQLException, IOException {
+    private void setListenersOnCloseDialogEvent(ButtonType result) throws SQLException, IOException {
 
-        if (!Objects.isNull(result.get())) {
+        if (!Objects.isNull(result)) {
 
-            if (result.get().getButtonData().equals(ButtonBar.ButtonData.NO)) {
+            if (result.getButtonData().equals(ButtonBar.ButtonData.NO)) {
 
                 AtomicReference<DB_TABLES> db_table = new AtomicReference<>();
 
                 new ImageRecognition().recognition(parseImageToBinaryCode())
                         .forEach((key, value) -> db_table.set(key));
 
-                InsertScriptsFileUtils.deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(),
-                        db_table.get(), true);
+                int chosenNumber = createInputDialog();
 
-                DesktopStarter.restartApplication(go);
+                if (chosenNumber != -3) {
+
+                    if (!(chosenNumber <= 9 && chosenNumber >= 0)) {
+
+                        while (chosenNumber != -1) {
+
+                            chosenNumber = createInputDialog();
+
+                            if (chosenNumber <= 9 && chosenNumber >= 0 || chosenNumber == -3) {
+
+                                break;
+
+                            }
+                        }
+                    }
+                }
+
+                if (chosenNumber == -3) {
+
+                    InsertScriptsFileUtils
+                            .deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(), db_table.get(), true);
+
+                    String SQL = "DELETE FROM " + db_table.get()
+                            + " WHERE source='" + parseImageToBinaryCode() +"'";
+
+                    DatabaseUtils.insertQuery(SQL);
+                    return;
+                }
+                if (chosenNumber != -1) {
+
+                    InsertScriptsFileUtils
+                            .deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(), db_table.get(), true);
+
+                    DatabaseUtils.insertQuery("DELETE FROM " + db_table.get()
+                            + " WHERE source='" + parseImageToBinaryCode() +"'");
+
+                    DB_TABLES newTable = Arrays
+                            .stream(DB_TABLES.values())
+                            .collect(Collectors.toList())
+                            .get(chosenNumber);
+
+                    InsertScriptsFileUtils
+                            .writeInsertScriptsFile(parseImageToBinaryCode(), newTable, true);
+
+                    String SQL = "INSERT INTO " + newTable +
+                            " VALUES('" + parseImageToBinaryCode() + "', true);";
+
+                    DatabaseUtils.insertQuery(SQL);
+                }
             }
         }
+    }
+
+    private int createInputDialog() {
+
+        TextInputDialog dialog = new TextInputDialog();
+
+        dialog.setTitle("Choose your number");
+        dialog.setHeaderText("Enter your number(0-9 or 'no one'):");
+        dialog.setContentText("Your number is:");
+
+        AtomicReference<Optional<String>> number = new AtomicReference<>(dialog.showAndWait());
+
+        AtomicInteger result = new AtomicInteger(-1);
+
+        number.get().ifPresent(text -> {
+
+            try {
+
+                if ("no one".equals(text)) {
+
+                    result.set(-3);
+
+                } else {
+
+                    result.set(Integer.parseInt(text));
+
+                    if (result.get() > 9 || result.get() < 0) {
+
+                        result.set(-2);
+
+                    }
+                }
+
+            } catch (NumberFormatException exception) {
+
+                result.set(-2);
+
+            }
+        });
+
+        return result.get();
     }
 }
 

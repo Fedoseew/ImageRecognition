@@ -1,3 +1,11 @@
+--create table for 0--
+create table source_zero
+(
+    source varchar(100),
+    isTrue boolean
+
+);
+
 --create table for 1--
 create table source_one
 (

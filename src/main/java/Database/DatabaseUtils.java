@@ -14,7 +14,8 @@ import java.util.logging.Logger;
 
 public final class DatabaseUtils {
 
-    private static final EmbeddedDatabase db;
+
+    private final static EmbeddedDatabase db;
 
     static {
         EmbeddedDatabaseBuilder builder = new EmbeddedDatabaseBuilder();
@@ -26,17 +27,18 @@ public final class DatabaseUtils {
                 .build();
     }
 
-    public synchronized static void startDBManager() {
+    public static synchronized void startDBManager() {
         String[] dbCredits = ApplicationConfiguration.getDatabaseCredits();
         DatabaseManagerSwing.main(dbCredits);
 
     }
 
-    public synchronized static Connection getConnection() throws SQLException {
+    public static synchronized Connection getConnection() throws SQLException {
+
         return db.getConnection();
     }
 
-    public synchronized static ResultSet selectQuery(String sql) {
+    public static synchronized ResultSet selectQuery(String sql) {
 
         ResultSet resultSet = null;
 
@@ -54,7 +56,7 @@ public final class DatabaseUtils {
         return resultSet;
     }
 
-    public synchronized static void insertQuery(String sql) {
+    public static synchronized void insertQuery(String sql) {
 
         try {
 
@@ -66,6 +68,5 @@ public final class DatabaseUtils {
             exception.printStackTrace();
 
         }
-
     }
 }
