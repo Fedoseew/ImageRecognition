@@ -73,74 +73,97 @@ public class ImageRecognition {
 
     }
 
-    private List<List<List<Integer>>> smartRecognition() throws SQLException {
+    private void smartRecognition() throws SQLException {
 
         ResultSet resultSet;
 
-        //Все матрицы переходов:
-        List<List<List<Integer>>> matrices = new ArrayList<>();
+        /* Все матрицы переходов: */
+        List<List<List<Integer>>> allTransitionMatrices = new ArrayList<>();
 
-        // Информативности признаков:
+        /* Информативности признаков: */
         List<Double> informative = new ArrayList<>();
 
-
+        /* Цикл по таблицам: */
         for (String query : queries) {
 
-            for (int index = 0; index < Math.pow(ApplicationConfiguration.getSizeOfGrid(), 2); index++) {
+            resultSet = DatabaseUtils.selectQuery(query);
 
-                resultSet = DatabaseUtils.selectQuery(query);
+            /* Для уменьшения нагрузки кешируем все строки из столбоцов source и isTrue в массивы соответственно: */
+            List<String> sourceColumnData = new ArrayList<>();
+            List<String> isTrueColumnData = new ArrayList<>();
 
-                // Матрица перехода:
-                List<List<Integer>> transitionMatrix = new ArrayList<>();
+            while (resultSet.next()) {
 
-                // Массив количества переходов элементов (0->0, 0->1, 1->0, 1->1)
+                sourceColumnData.add(resultSet.getString(1));
+                isTrueColumnData.add(resultSet.getString(2));
+
+            }
+
+            /* Цикл по колонкам таблицы: */
+            for (int columnIndex = 0; columnIndex < Math.pow(
+                    ApplicationConfiguration.getSizeOfGrid(), 2); columnIndex++) {
+
+                /* Матрица перехода для конкретной таблицы и колонки: */
+                TransitionMatrix transitionMatrix = new TransitionMatrix(
+                        DB_TABLES.valueOf(query.substring(14)), columnIndex + 1);
+
+                /*
+                 Массив количества переходов элементов, где индексы идут в следующем соотвествии:
+                  0->0, 0->1, 1->0, 1->1 :
+                */
                 List<Integer> countOfTransitionElement = Arrays.asList(0, 0, 0, 0);
 
-                while (resultSet.next()) {
+                /* Цикл по строкам: */
+                for (
+                        int sourceRowIndex = 0, isTrueRowIndex = 0;
+                        sourceRowIndex < sourceColumnData.size() && isTrueRowIndex < isTrueColumnData.size();
+                        sourceRowIndex++, isTrueRowIndex++
+                ) {
 
-                    if (resultSet.getString(1).charAt(index) == '0') {
+                    /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит:: */
+                    if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
 
-                        if (resultSet.getString(2).equals("FALSE")) {
+                        if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
 
                             int tmp = countOfTransitionElement.get(0) + 1;
                             countOfTransitionElement.set(0, tmp);
 
-                        } else if (resultSet.getString(2).equals("TRUE")) {
+                        } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
 
                             int tmp = countOfTransitionElement.get(1) + 1;
                             countOfTransitionElement.set(1, tmp);
 
                         }
 
-                    } else if (resultSet.getString(1).charAt(index) == '1') {
+                    } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
 
-                        if (resultSet.getString(2).equals("FALSE")) {
+                        if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
 
                             int tmp = countOfTransitionElement.get(2) + 1;
                             countOfTransitionElement.set(2, tmp);
 
-                        } else if (resultSet.getString(2).equals("TRUE")) {
+                        } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
 
                             int tmp = countOfTransitionElement.get(3) + 1;
                             countOfTransitionElement.set(3, tmp);
 
                         }
                     }
+
                 }
 
-                transitionMatrix.add(Arrays.asList(
+                transitionMatrix.getTransitionMatrix().add(Arrays.asList(
                         countOfTransitionElement.get(0),
                         countOfTransitionElement.get(1)
                 ));
 
-                transitionMatrix.add(Arrays.asList(
+                transitionMatrix.getTransitionMatrix().add(Arrays.asList(
                         countOfTransitionElement.get(2),
                         countOfTransitionElement.get(3)
                 ));
-
-                matrices.add(transitionMatrix);
+                System.out.println(transitionMatrix);
+                allTransitionMatrices.add(transitionMatrix.getTransitionMatrix());
             }
         }
-        return matrices;
     }
 }
