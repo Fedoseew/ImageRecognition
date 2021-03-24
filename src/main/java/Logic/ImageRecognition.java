@@ -11,24 +11,7 @@ import java.util.*;
 
 public class ImageRecognition {
 
-    private final String[] queries = generateSQL();
-
-    private String[] generateSQL() {
-
-        String[] result = new String[10];
-        result[0] = "select * from " + DB_TABLES.source_zero;
-        result[1] = "select * from " + DB_TABLES.source_one;
-        result[2] = "select * from " + DB_TABLES.source_two;
-        result[3] = "select * from " + DB_TABLES.source_three;
-        result[4] = "select * from " + DB_TABLES.source_four;
-        result[5] = "select * from " + DB_TABLES.source_five;
-        result[6] = "select * from " + DB_TABLES.source_six;
-        result[7] = "select * from " + DB_TABLES.source_seven;
-        result[8] = "select * from " + DB_TABLES.source_eight;
-        result[9] = "select * from " + DB_TABLES.source_nine;
-
-        return result;
-    }
+    private final String[] queries = DatabaseUtils.selectAllSourcesQueries();
 
     public Map<DB_TABLES, Integer> recognition(String source) throws SQLException {
 
@@ -80,8 +63,8 @@ public class ImageRecognition {
         /* Все матрицы переходов: */
         List<List<List<Integer>>> allTransitionMatrices = new ArrayList<>();
 
-        /* Информативности признаков: */
-        List<Double> informative = new ArrayList<>();
+        /* Информативности признаков (key - columnIndex, value - informative): */
+        Map<Integer, Double> informative = new HashMap();
 
         /* Цикл по таблицам: */
         for (String query : queries) {
@@ -161,9 +144,15 @@ public class ImageRecognition {
                         countOfTransitionElement.get(2),
                         countOfTransitionElement.get(3)
                 ));
-                System.out.println(transitionMatrix);
+
+                informative.put(columnIndex+1, transitionMatrix.calculateInformative());
+
                 allTransitionMatrices.add(transitionMatrix.getTransitionMatrix());
+
+                System.out.println(transitionMatrix);
+
             }
+            System.out.println(informative);
         }
     }
 }
