@@ -13,61 +13,57 @@ public class ImageRecognition {
 
     private final String[] queries = DatabaseUtils.selectAllSourcesQueries();
 
-    public Map<DB_TABLES, Integer> recognition(String source) throws SQLException {
+    public Map<DB_TABLES, Integer> recognition(String source, int[] settings) throws SQLException {
+
+        int alpha = settings[0];
+        int betta = settings[1];
+        int gamma = settings[2];
 
         Connection connection = DatabaseUtils.getConnection();
-
         BinaryCodeComparator binaryCodeComparator = new BinaryCodeComparator();
-
         Map<DB_TABLES, Integer> result = new HashMap<>();
 
         if (!connection.isClosed()) {
 
             for (int countOfQuery = 0; countOfQuery < queries.length; countOfQuery++) {
-
                 ResultSet rs = DatabaseUtils.selectQuery(queries[countOfQuery]);
 
                 while (rs.next()) {
-
                     int conditionResult = binaryCodeComparator.compare(rs.getString(1), source);
 
                     if (conditionResult > 0) {
-
                         if (rs.getString(2).equals("FALSE")) {
-
                             break;
 
                         } else if (rs.getString(2).equals("TRUE")) {
-
                             DB_TABLES db_table = DB_TABLES.valueOf(queries[countOfQuery].substring(14));
-
                             result.put(db_table, countOfQuery);
 
                             return result;
-
                         }
                     }
                 }
             }
-            smartRecognition();
+            smartRecognition(alpha, betta, gamma);
         }
 
         return result;
-
     }
 
-    private void smartRecognition() throws SQLException {
+    private void smartRecognition(int alpha, int betta, int gamma) throws SQLException {
 
         ResultSet resultSet;
 
         /* Все матрицы переходов: */
-        List<List<List<Integer>>> allTransitionMatrices = new ArrayList<>();
+        List<List<TransitionMatrix>> allTransitionMatrices = new ArrayList<>();
 
         /* Информативности признаков (key - columnIndex, value - informative): */
-        Map<Integer, Double> informative = new HashMap();
+        List<Map<Integer, Double>> informative = new ArrayList<>();
 
         /* Цикл по таблицам: */
         for (String query : queries) {
+            Map<Integer, Double> tableInformative = new HashMap<>();
+            List<TransitionMatrix> tableTransitionMatrix = new ArrayList<>();
 
             resultSet = DatabaseUtils.selectQuery(query);
 
@@ -76,10 +72,8 @@ public class ImageRecognition {
             List<String> isTrueColumnData = new ArrayList<>();
 
             while (resultSet.next()) {
-
                 sourceColumnData.add(resultSet.getString(1));
                 isTrueColumnData.add(resultSet.getString(2));
-
             }
 
             /* Цикл по колонкам таблицы: */
@@ -103,36 +97,33 @@ public class ImageRecognition {
                         sourceRowIndex++, isTrueRowIndex++
                 ) {
 
-                    /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит:: */
-                    if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
+                    /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит: */
+                    try {
+                        if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
 
-                        if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
+                            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
+                                int tmp = countOfTransitionElement.get(0) + 1;
+                                countOfTransitionElement.set(0, tmp);
 
-                            int tmp = countOfTransitionElement.get(0) + 1;
-                            countOfTransitionElement.set(0, tmp);
+                            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
+                                int tmp = countOfTransitionElement.get(1) + 1;
+                                countOfTransitionElement.set(1, tmp);
 
-                        } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
+                            }
 
-                            int tmp = countOfTransitionElement.get(1) + 1;
-                            countOfTransitionElement.set(1, tmp);
+                        } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
 
+                            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
+                                int tmp = countOfTransitionElement.get(2) + 1;
+                                countOfTransitionElement.set(2, tmp);
+
+                            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
+                                int tmp = countOfTransitionElement.get(3) + 1;
+                                countOfTransitionElement.set(3, tmp);
+                            }
                         }
 
-                    } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
-
-                        if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
-
-                            int tmp = countOfTransitionElement.get(2) + 1;
-                            countOfTransitionElement.set(2, tmp);
-
-                        } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
-
-                            int tmp = countOfTransitionElement.get(3) + 1;
-                            countOfTransitionElement.set(3, tmp);
-
-                        }
-                    }
-
+                    } catch (Exception ignored) {}
                 }
 
                 transitionMatrix.getTransitionMatrix().add(Arrays.asList(
@@ -145,14 +136,27 @@ public class ImageRecognition {
                         countOfTransitionElement.get(3)
                 ));
 
-                informative.put(columnIndex+1, transitionMatrix.calculateInformative());
-
-                allTransitionMatrices.add(transitionMatrix.getTransitionMatrix());
-
-                System.out.println(transitionMatrix);
-
+                tableInformative.put(columnIndex + 1, transitionMatrix.getInformative());
+                tableTransitionMatrix.add(transitionMatrix);
             }
-            System.out.println(informative);
+            informative.add(tableInformative);
+            allTransitionMatrices.add(tableTransitionMatrix);
         }
+
+        double alphaProcent = allTransitionMatrices
+                .get(1)
+                .get(0)
+                .getI0_Y()
+                * ((double) alpha / 100);
+
+        List.copyOf(informative)
+                .forEach(tableInformative -> {
+                    Map.copyOf(tableInformative)
+                            .forEach((key, value) -> {
+                                if (value < alphaProcent) {
+                                    tableInformative.remove(key);
+                                }
+                            });
+                });
     }
 }

@@ -1,7 +1,6 @@
-package Logic;
+package Database;
 
 import Configurations.ApplicationConfiguration;
-import Database.DB_TABLES;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,11 +19,18 @@ public class InsertScriptsFileUtils {
     }
 
     public synchronized static void deleteSourceFromInsertScriptsFile(String source, DB_TABLES table,
-                                                         boolean isTrue) throws IOException {
+                                                                      boolean isTrue) throws IOException {
 
         String deletedRow = "INSERT INTO " + table + " VALUES ('" + source + "', " + isTrue + ");";
 
         List<String> lines = readInsertScriptsFile();
+
+        int indexOfUpdateFromRow = lines.indexOf(deletedRow) - 1;
+        String updatedFromRow = lines.get(indexOfUpdateFromRow);
+
+        if (updatedFromRow.contains("--UPDATED FROM")) {
+            lines.remove(updatedFromRow);
+        }
 
         lines.remove(deletedRow);
 
@@ -33,7 +39,7 @@ public class InsertScriptsFileUtils {
     }
 
     public synchronized static void writeInsertScriptsFile(String source, DB_TABLES table,
-                                              boolean isTrue) throws IOException {
+                                                           boolean isTrue) throws IOException {
 
         String SQL = "INSERT INTO " + table + " VALUES ('" + source + "', " + isTrue + ");";
 
@@ -41,12 +47,12 @@ public class InsertScriptsFileUtils {
 
         boolean flag = true;
 
-        for(String row : readInsertScriptsFile()) {
+        for (String row : readInsertScriptsFile()) {
 
-            if(
+            if (
                     row.contains(table.toString())
-                    && row.contains(String.valueOf(isTrue))
-                    && flag
+                            && row.contains(String.valueOf(isTrue))
+                            && flag
             ) {
 
                 oldScripts.append("--UPDATED FROM ").append(LocalDateTime.now()).append("--\n");

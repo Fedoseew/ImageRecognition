@@ -3,7 +3,9 @@
 <?import javafx.scene.Cursor?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
 <?import javafx.scene.control.Slider?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.effect.ColorAdjust?>
 <?import javafx.scene.effect.DropShadow?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -13,13 +15,18 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 <?import javafx.scene.paint.Color?>
-<?import javafx.scene.paint.LinearGradient?>
-<?import javafx.scene.paint.Stop?>
 <?import javafx.scene.text.Font?>
 
-<AnchorPane fx:id="anchorPane" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" style="-fx-background-color: snow;" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.Desktop.MainController">
-   <HBox opacity="0.49" prefHeight="39.0" prefWidth="800.0" style="-fx-background-color: indigo;" />
-   <VBox layoutX="595.0" layoutY="77.0" opacity="0.15" prefHeight="434.0" prefWidth="186.0" style="-fx-background-color: silver; -fx-border-radius: 30px; -fx-border-color: black; -fx-background-radius: 30;" />
+<AnchorPane fx:id="anchorPane" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="800.0" style="-fx-background-color: lightgrey;" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="UI.Desktop.MainController">
+   <HBox opacity="0.67" prefHeight="39.0" prefWidth="800.0" style="-fx-background-color: white;" />
+   <VBox layoutX="595.0" layoutY="90.0" opacity="0.43" prefHeight="426.0" prefWidth="186.0" style="-fx-background-color: white; -fx-border-radius: 30px; -fx-border-color: black; -fx-background-radius: 30;">
+      <effect>
+         <DropShadow>
+            <color>
+               <Color red="0.7875000238418579" green="0.7166666388511658" blue="1.0" />
+            </color>
+         </DropShadow>
+      </effect></VBox>
     <Label fx:id="label" alignment="CENTER" layoutX="251.0" layoutY="-5.0" prefHeight="47.0" prefWidth="298.0" text="Image Recognition App" textAlignment="CENTER">
         <font>
             <Font name="Consolas Bold" size="23.0" />
@@ -30,34 +37,18 @@
         <effect>
             <DropShadow height="11.47" radius="5.235" spread="1.0" width="11.47">
                 <color>
-                    <Color red="0.8631790280342102" green="0.7351852059364319" blue="1.0" />
+                    <Color red="1.0" green="1.0" blue="1.0" />
                 </color>
             </DropShadow>
         </effect>
     </Label>
-    <Button fx:id="go" alignment="CENTER" layoutX="334.0" layoutY="538.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="130.0" style="-fx-background-radius: 30; -fx-background-color: #c1bebe;" text="GO!" textAlignment="CENTER">
+    <Button fx:id="go" alignment="CENTER" defaultButton="true" layoutX="334.0" layoutY="538.0" mnemonicParsing="false" prefHeight="47.0" prefWidth="130.0" style="-fx-background-radius: 30; -fx-background-color: inherit; -fx-border-color: grey; -fx-border-radius: 30;" text="GO" textAlignment="CENTER">
         <font>
-            <Font name="Consolas Bold" size="20.0" />
+            <Font name="Georgia Bold" size="24.0" />
         </font>
         <cursor>
             <Cursor fx:constant="HAND" />
         </cursor>
-        <textFill>
-            <LinearGradient startX="0.8854961850260961">
-                <stops>
-                    <Stop>
-                        <color>
-                            <Color green="0.19289155304431915" blue="1.0" />
-                        </color>
-                    </Stop>
-                    <Stop offset="1.0">
-                        <color>
-                            <Color green="0.6166666746139526" blue="1.0" />
-                        </color>
-                    </Stop>
-                </stops>
-            </LinearGradient>
-        </textFill>
     </Button>
     <GridPane fx:id="grid" gridLinesVisible="true" layoutX="25.0" layoutY="87.0" minHeight="-Infinity" minWidth="-Infinity" prefHeight="426.0" prefWidth="549.0">
         <columnConstraints>
@@ -75,30 +66,79 @@
          <Cursor fx:constant="HAND" />
       </cursor>
       <effect>
-         <ColorAdjust brightness="0.04" contrast="-0.04" hue="-0.02" saturation="0.11" />
+         <ColorAdjust brightness="-0.09" contrast="0.13" hue="-0.13" saturation="0.46" />
       </effect>
    </Button>
-   <Slider blockIncrement="1.0" layoutX="618.0" layoutY="198.0" majorTickUnit="20.0" max="20.0" minorTickCount="20" showTickLabels="true" showTickMarks="true" />
-   <Slider layoutX="618.0" layoutY="333.0" majorTickUnit="20.0" max="20.0" minorTickCount="20" showTickLabels="true" showTickMarks="true" />
-   <Slider blockIncrement="1.0" layoutX="618.0" layoutY="462.0" majorTickUnit="20.0" max="20.0" minorTickCount="20" showTickLabels="true" showTickMarks="true" />
-   <Label layoutX="674.0" layoutY="166.0" text="Alpha">
+   <Slider fx:id="alphaScroll" layoutX="618.0" layoutY="186.0" majorTickUnit="20.0" minorTickCount="10" showTickLabels="true" showTickMarks="true" />
+   <Slider fx:id="bettaScroll" blockIncrement="5.0" layoutX="618.0" layoutY="298.0" majorTickUnit="20.0" minorTickCount="10" showTickLabels="true" showTickMarks="true" />
+   <Slider fx:id="gammaScroll" blockIncrement="5.0" layoutX="618.0" layoutY="419.0" majorTickUnit="20.0" minorTickCount="10" showTickLabels="true" showTickMarks="true" />
+   <Label layoutX="674.0" layoutY="154.0" text="Alpha">
       <font>
          <Font name="Book Antiqua" size="14.0" />
       </font>
    </Label>
-   <Label layoutX="674.0" layoutY="300.0" text="Betta">
+   <Label layoutX="674.0" layoutY="278.0" text="Betta">
       <font>
          <Font name="Book Antiqua" size="14.0" />
       </font>
    </Label>
-   <Label layoutX="674.0" layoutY="431.0" text="Gamma">
+   <Label layoutX="666.0" layoutY="397.0" text="Gamma">
       <font>
          <Font name="Book Antiqua" size="14.0" />
       </font>
    </Label>
-   <Label alignment="CENTER" layoutX="618.0" layoutY="75.0" prefHeight="47.0" prefWidth="140.0" text="Settings" textAlignment="CENTER">
+   <Label alignment="CENTER" layoutX="618.0" layoutY="88.0" prefHeight="47.0" prefWidth="140.0" text="Settings" textAlignment="CENTER">
       <font>
          <Font name="Bell MT Bold" size="22.0" />
       </font>
    </Label>
+   <TextField fx:id="alphaField" alignment="CENTER" editable="false" layoutX="656.0" layoutY="226.0" prefHeight="18.0" prefWidth="63.0" promptText="alpha">
+      <effect>
+         <DropShadow height="4.77" radius="1.8849999999999998" width="4.77">
+            <color>
+               <Color red="0.49135446548461914" blue="1.0" />
+            </color>
+         </DropShadow>
+      </effect>
+      <font>
+         <Font name="System Italic" size="12.0" />
+      </font>
+   </TextField>
+   <TextField fx:id="bettaField" alignment="CENTER" editable="false" layoutX="656.0" layoutY="340.0" prefHeight="18.0" prefWidth="63.0" promptText="betta">
+      <effect>
+         <DropShadow height="11.92" radius="5.46" width="11.92">
+            <color>
+               <Color red="0.5803555250167847" blue="1.0" />
+            </color>
+         </DropShadow>
+      </effect>
+      <font>
+         <Font name="System Italic" size="12.0" />
+      </font>
+   </TextField>
+   <TextField fx:id="gammaField" alignment="CENTER" editable="false" layoutX="656.0" layoutY="462.0" prefHeight="18.0" prefWidth="63.0" promptText="gamma">
+      <effect>
+         <DropShadow height="14.75" radius="6.65" width="13.85">
+            <color>
+               <Color red="0.47838640213012695" blue="1.0" />
+            </color>
+         </DropShadow>
+      </effect>
+      <font>
+         <Font name="System Italic" size="12.0" />
+      </font>
+   </TextField>
+   <Label contentDisplay="CENTER" layoutX="18.0" layoutY="7.0" prefHeight="24.0" prefWidth="87.0" text="Author: Fedoseew M." textAlignment="CENTER">
+      <font>
+         <Font name="Bad Script Regular" size="10.0" />
+      </font>
+      <effect>
+         <DropShadow height="22.49" radius="8.584999999999999" spread="0.86" width="13.85">
+            <color>
+               <Color red="0.8314814567565918" green="0.9859567880630493" blue="1.0" />
+            </color>
+         </DropShadow>
+      </effect>
+   </Label>
+   <Separator layoutX="594.0" layoutY="131.0" prefHeight="2.0" prefWidth="186.0" />
 </AnchorPane>

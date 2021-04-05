@@ -28,7 +28,7 @@ public class ConsoleInterface {
     public void start() throws IOException, InterruptedException, SQLException {
         boolean flag = true;
 
-        while(flag) {
+        while (flag) {
 
             generateConsole();
             writer.write("Do you want to continue? YES - [1] \\ NO - [2]");
@@ -37,7 +37,7 @@ public class ConsoleInterface {
 
             String response = reader.readLine();
 
-            while(!(response.equals("1") || response.equals("2"))) {
+            while (!(response.equals("1") || response.equals("2"))) {
 
                 writer.write("Please, enter [1] or [2]");
                 writer.newLine();
@@ -47,7 +47,7 @@ public class ConsoleInterface {
 
             }
 
-            if(response.equals("2")) {
+            if (response.equals("2")) {
 
                 flag = false;
 
@@ -73,7 +73,7 @@ public class ConsoleInterface {
 
         for (int i = 0; i < sizeOfConsoleMatrix; i++) {
 
-            if(checkerForWrongInputText != i + 1) {
+            if (checkerForWrongInputText != i + 1) {
                 stringBuilder.append(i + 1).append(" line: ");
                 checkerForWrongInputText = i + 1;
             }
@@ -86,7 +86,7 @@ public class ConsoleInterface {
 
             if (
                     (inputLine.length() > sizeOfConsoleMatrix || inputLine.length() < sizeOfConsoleMatrix)
-                    || (!inputLine.contains("*") && !inputLine.contains(" "))
+                            || (!inputLine.contains("*") && !inputLine.contains(" "))
             ) {
 
                 writer.write("\nEnter only \"*\" or \" \" (space) and length of input line must be "
@@ -100,16 +100,33 @@ public class ConsoleInterface {
             }
         }
 
+        writer.write("\nPlease enter settings: \n");
+        writer.write("ALPHA: ");
+        writer.flush();
+        String alpha = reader.readLine();
+        writer.write("BETTA: ");
+        writer.flush();
+        String betta = reader.readLine();
+        writer.write("GAMMA: ");
+        writer.flush();
+        String gamma = reader.readLine();
+
+        int[] settings = new int[]{
+                Integer.parseInt(alpha),
+                Integer.parseInt(betta),
+                Integer.parseInt(gamma)
+        };
+
         Map<DB_TABLES, Integer> result = imageRecognition.recognition(
                 imageParserToBinaryCode
-                        .consoleParserInputNumber(stringBuilder, sizeOfConsoleMatrix, writer)
+                        .consoleParserInputNumber(stringBuilder, sizeOfConsoleMatrix, writer), settings
         );
 
         AtomicInteger resultNumber = new AtomicInteger(-1);
 
         result.forEach((key, value) -> resultNumber.set(value));
 
-        if(resultNumber.get() >= 0) {
+        if (resultNumber.get() >= 0) {
 
             System.out.println("\nSuccessfully! Your number is " + resultNumber + ", right?");
 
@@ -130,7 +147,7 @@ public class ConsoleInterface {
         writer.write("Welcome to Image Recognition Application");
         writer.write("\n*****************************************\n");
         writer.write("\n To recognize the image, enter a number in the console ("
-                +sizeOfConsoleMatrix +"x" + sizeOfConsoleMatrix + ").\n" +
+                + sizeOfConsoleMatrix + "x" + sizeOfConsoleMatrix + ").\n" +
                 " ► Hint: Enter \"*\" or \" \" (space) ◄\n");
         writer.newLine();
         writer.write(" Start typing your number below:\n");

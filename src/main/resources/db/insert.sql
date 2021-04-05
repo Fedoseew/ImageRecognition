@@ -35,6 +35,7 @@ INSERT INTO source_two VALUES ('0000000000000000000000000', false);
 INSERT INTO source_two VALUES ('1111111111111111111111111', false);
 
     --TRUE--
+INSERT INTO source_two VALUES ('first_row_initial_script', true);
 
 --init source for 3--
 

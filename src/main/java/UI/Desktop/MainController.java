@@ -4,7 +4,7 @@ import Configurations.ApplicationConfiguration;
 import Database.DB_TABLES;
 import Database.DatabaseUtils;
 import Logic.ImageRecognition;
-import Logic.InsertScriptsFileUtils;
+import Database.InsertScriptsFileUtils;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
@@ -40,18 +40,31 @@ public class MainController {
     private Button closeBtn;
 
     @FXML
-    void initialize() {
+    private Slider alphaScroll;
 
+    @FXML
+    private Slider bettaScroll;
+
+    @FXML
+    private Slider gammaScroll;
+
+    @FXML
+    private TextField alphaField;
+
+    @FXML
+    private TextField bettaField;
+
+    @FXML
+    private TextField gammaField;
+
+
+    @FXML
+    void initialize() {
         createGrid();
         connectToDatabase();
-        createGoButtonClickListener();
-
-        closeBtn.setOnMouseClicked(click -> {
-            Stage stage = (Stage) closeBtn.getScene().getWindow();
-            stage.close();
-            Logger.getGlobal().info("APPLICATION STOPPED...");
-        });
-
+        setListenerForGoButton();
+        setListenersForSettingScrolls();
+        setListenerForCloseButton();
     }
 
     private void createGrid() {
@@ -150,7 +163,7 @@ public class MainController {
         }
     }
 
-    private void createGoButtonClickListener() {
+    private void setListenerForGoButton() {
 
         go.setOnMouseClicked(click -> {
 
@@ -158,7 +171,12 @@ public class MainController {
 
             try {
 
-                Map<DB_TABLES, Integer> response = imageRecognition.recognition(parseImageToBinaryCode());
+                Map<DB_TABLES, Integer> response = imageRecognition.recognition(parseImageToBinaryCode(),
+                        new int[]{
+                                (int) alphaScroll.getValue(),
+                                (int) bettaScroll.getValue(),
+                                (int) gammaScroll.getValue()
+                        });
 
                 createResponseNotification(response);
 
@@ -237,7 +255,8 @@ public class MainController {
 
             responseAlert.setHeaderText("Recognition completed!");
             responseAlert.setContentText("Ooops! Failed to recognize the image :( Try again.");
-            responseAlert.getDialogPane().getButtonTypes().add(ButtonType.CLOSE);
+            responseAlert.getDialogPane().getButtonTypes().add(
+                    new ButtonType("Try again", ButtonBar.ButtonData.CANCEL_CLOSE));
 
         }
 
@@ -257,7 +276,13 @@ public class MainController {
 
                 AtomicReference<DB_TABLES> db_table = new AtomicReference<>();
 
-                new ImageRecognition().recognition(parseImageToBinaryCode())
+                new ImageRecognition()
+                        .recognition(parseImageToBinaryCode(),
+                                new int[]{
+                                        (int) alphaScroll.getValue(),
+                                        (int) bettaScroll.getValue(),
+                                        (int) gammaScroll.getValue()
+                                })
                         .forEach((key, value) -> db_table.set(key));
 
                 int chosenNumber = createInputDialog();
@@ -285,7 +310,7 @@ public class MainController {
                             .deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(), db_table.get(), true);
 
                     String SQL = "DELETE FROM " + db_table.get()
-                            + " WHERE source='" + parseImageToBinaryCode() +"'";
+                            + " WHERE source='" + parseImageToBinaryCode() + "'";
 
                     DatabaseUtils.insertQuery(SQL);
                     return;
@@ -296,7 +321,7 @@ public class MainController {
                             .deleteSourceFromInsertScriptsFile(parseImageToBinaryCode(), db_table.get(), true);
 
                     DatabaseUtils.insertQuery("DELETE FROM " + db_table.get()
-                            + " WHERE source='" + parseImageToBinaryCode() +"'");
+                            + " WHERE source='" + parseImageToBinaryCode() + "'");
 
                     DB_TABLES newTable = Arrays
                             .stream(DB_TABLES.values())
@@ -354,6 +379,38 @@ public class MainController {
         });
 
         return result.get();
+    }
+
+    private void setListenersForSettingScrolls() {
+
+        alphaScroll.valueProperty().addListener((observableValue, number, t1) -> {
+            setTextAndStyleForSlider(alphaScroll, alphaField, t1);
+        });
+
+        bettaScroll.valueProperty().addListener((observableValue, number, t1) -> {
+            setTextAndStyleForSlider(bettaScroll, bettaField, t1);
+        });
+
+        gammaScroll.valueProperty().addListener((observableValue, number, t1) -> {
+            setTextAndStyleForSlider(gammaScroll, gammaField, t1);
+        });
+    }
+
+    private void setTextAndStyleForSlider(Slider slider, TextField textField, Number number) {
+
+        textField.setText(String.valueOf(number.intValue()));
+        int rgb = 255 - number.intValue();
+        String color = "rgb(" + 255 + ", " + rgb + ", " + rgb + ")";
+        slider.setStyle("-fx-control-inner-background: " + color);
+    }
+
+    private void setListenerForCloseButton() {
+
+        closeBtn.setOnMouseClicked(click -> {
+            Stage stage = (Stage) closeBtn.getScene().getWindow();
+            stage.close();
+            Logger.getGlobal().info("APPLICATION STOPPED...");
+        });
     }
 }
 
