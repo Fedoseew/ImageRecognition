@@ -8,10 +8,12 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class ImageRecognition {
 
-    private final String[] queries = DatabaseUtils.selectAllSourcesQueries();
+    private final String[] queries = DatabaseUtils.selectAllFromDb();
 
     public Map<DB_TABLES, Integer> recognition(String source, int[] settings) throws SQLException {
 
@@ -52,7 +54,7 @@ public class ImageRecognition {
 
     private void smartRecognition(int alpha, int betta, int gamma) throws SQLException {
 
-        ResultSet resultSet;
+        AtomicReference<ResultSet> resultSet = new AtomicReference<>();
 
         /* Все матрицы переходов: */
         List<List<TransitionMatrix>> allTransitionMatrices = new ArrayList<>();
@@ -60,20 +62,25 @@ public class ImageRecognition {
         /* Информативности признаков (key - columnIndex, value - informative): */
         List<Map<Integer, Double>> informative = new ArrayList<>();
 
+        /* Все признаки (key - номер таблицы (0..9), value - список признаков (key - номер признака, value - признак)): */
+        Map<Integer, Map<Integer, String>> indices = new TreeMap<>();
+
         /* Цикл по таблицам: */
-        for (String query : queries) {
-            Map<Integer, Double> tableInformative = new HashMap<>();
+        for (int countOfQuery = 0; countOfQuery < queries.length; countOfQuery++) {
+            Map<Integer, Double> tableInformative = new TreeMap<>();
             List<TransitionMatrix> tableTransitionMatrix = new ArrayList<>();
+            indices.put(countOfQuery, new TreeMap<>());
 
-            resultSet = DatabaseUtils.selectQuery(query);
+            resultSet.set(DatabaseUtils.selectQuery(queries[countOfQuery]));
 
-            /* Для уменьшения нагрузки кешируем все строки из столбоцов source и isTrue в массивы соответственно: */
+            /* Для уменьшения нагрузки кэшируем все строки из столбоцов source и isTrue в массивы соответственно: */
             List<String> sourceColumnData = new ArrayList<>();
             List<String> isTrueColumnData = new ArrayList<>();
 
-            while (resultSet.next()) {
-                sourceColumnData.add(resultSet.getString(1));
-                isTrueColumnData.add(resultSet.getString(2));
+
+            while (resultSet.get().next()) {
+                sourceColumnData.add(resultSet.get().getString(1));
+                isTrueColumnData.add(resultSet.get().getString(2));
             }
 
             /* Цикл по колонкам таблицы: */
@@ -82,13 +89,15 @@ public class ImageRecognition {
 
                 /* Матрица перехода для конкретной таблицы и колонки: */
                 TransitionMatrix transitionMatrix = new TransitionMatrix(
-                        DB_TABLES.valueOf(query.substring(14)), columnIndex + 1);
+                        DB_TABLES.valueOf(queries[countOfQuery].substring(14)), columnIndex + 1);
 
                 /*
                  Массив количества переходов элементов, где индексы идут в следующем соотвествии:
                   0->0, 0->1, 1->0, 1->1 :
                 */
                 List<Integer> countOfTransitionElement = Arrays.asList(0, 0, 0, 0);
+
+                StringBuilder indicesBuilder = new StringBuilder();
 
                 /* Цикл по строкам: */
                 for (
@@ -99,6 +108,8 @@ public class ImageRecognition {
 
                     /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит: */
                     try {
+                        indicesBuilder.append(sourceColumnData.get(sourceRowIndex).charAt(columnIndex));
+
                         if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
 
                             if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
@@ -123,40 +134,140 @@ public class ImageRecognition {
                             }
                         }
 
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
 
-                transitionMatrix.getTransitionMatrix().add(Arrays.asList(
-                        countOfTransitionElement.get(0),
-                        countOfTransitionElement.get(1)
-                ));
+                indices.get(countOfQuery).put(columnIndex + 1, indicesBuilder.toString());
 
-                transitionMatrix.getTransitionMatrix().add(Arrays.asList(
-                        countOfTransitionElement.get(2),
-                        countOfTransitionElement.get(3)
-                ));
+                transitionMatrix
+                        .getTransitionMatrix()
+                        .add(Arrays.asList(countOfTransitionElement.get(0), countOfTransitionElement.get(1)
+                        ));
+
+                transitionMatrix
+                        .getTransitionMatrix()
+                        .add(Arrays.asList(countOfTransitionElement.get(2), countOfTransitionElement.get(3)
+                        ));
 
                 tableInformative.put(columnIndex + 1, transitionMatrix.getInformative());
                 tableTransitionMatrix.add(transitionMatrix);
             }
+
             informative.add(tableInformative);
             allTransitionMatrices.add(tableTransitionMatrix);
         }
 
-        double alphaProcent = allTransitionMatrices
-                .get(1)
-                .get(0)
-                .getI0_Y()
-                * ((double) alpha / 100);
+        // Откидывание признаков по параметру alpha:
+        double alphaProcent;
 
-        List.copyOf(informative)
-                .forEach(tableInformative -> {
-                    Map.copyOf(tableInformative)
-                            .forEach((key, value) -> {
-                                if (value < alphaProcent) {
-                                    tableInformative.remove(key);
+        if (alpha > 0) {
+
+            alphaProcent = allTransitionMatrices
+                    .get(1)
+                    .get(0)
+                    .getI0_Y()
+                    * ((double) alpha) / 100;
+
+            Double finalAlphaProcent = alphaProcent;
+            List.copyOf(informative)
+                    .forEach(tableInformative -> {
+                        Map.copyOf(tableInformative)
+                                .forEach((column, informativeOfColumn) -> {
+                                    if (informativeOfColumn < finalAlphaProcent) {
+                                        tableInformative.remove(column);
+                                    }
+                                });
+                    });
+        }
+
+
+        /* TODO: Расчёт расстояний между признаками:
+         * P(Xi, Xj) = 1/2 * { I0(Xi|Xj) + I0(Xj|Xi) }
+         */
+
+        /* Расстояния (key - номер таблицы (0..9),
+         * value - список сложных признаков (key - индекс сложного признака, value - расстояние)):
+         */
+        Map<Integer, List<Map<String, Double>>> metrics = new TreeMap<>();
+
+        StringBuilder columnsBuilder = new StringBuilder();
+
+
+        var ref = new Object() {
+            int countOfNumber = 0;
+        };
+
+        informative.forEach(tableInformative -> {
+
+            metrics.put(ref.countOfNumber, new ArrayList<>());
+
+            tableInformative.forEach((column1, informativeOfColumn1) -> {
+
+                tableInformative.forEach((column2, informativeOfColumn2) -> {
+
+                    if (!column1.equals(column2)) {
+
+                        // Проверка на дубликаты (HINT: признак 12 == 21):
+                        AtomicBoolean duplicates = new AtomicBoolean(false);
+
+                        metrics.forEach((key, value) -> value.forEach(x -> {
+                            if (x.containsKey(String.valueOf(column1) + column2)
+                                    || x.containsKey(String.valueOf(column2) + column1)) {
+                                duplicates.set(x.containsKey(String.valueOf(column1) + column2)
+                                        || x.containsKey(String.valueOf(column2) + column1));
+                            }
+                        }));
+
+                        if (!duplicates.get()) {
+
+                            // Расчёт по формуле, добавление в map с метриками и формирование сложных признаков:
+                            columnsBuilder.append(column1).append(column2);
+
+                            TransitionMatrixForIndices transitionMatrix = new TransitionMatrixForIndices(column1, column2);
+                            String firstSource = indices.get(ref.countOfNumber).get(column1);
+                            String secondSource = indices.get(ref.countOfNumber).get(column2);
+
+                            for (int i = 0; i < firstSource.length(); i++) {
+
+                                if (firstSource.charAt(i) == '0') {
+                                    if (secondSource.charAt(i) == '0') {
+                                        int old = transitionMatrix.getTransitionMatrix().get(0).get(0);
+                                        transitionMatrix.getTransitionMatrix().get(0).set(0, old + 1);
+                                    } else if (secondSource.charAt(i) == '1') {
+                                        int old = transitionMatrix.getTransitionMatrix().get(0).get(1);
+                                        transitionMatrix.getTransitionMatrix().get(0).set(1, old + 1);
+                                    }
+
+                                } else if (firstSource.charAt(i) == '1') {
+                                    if (secondSource.charAt(i) == '0') {
+                                        int old = transitionMatrix.getTransitionMatrix().get(1).get(0);
+                                        transitionMatrix.getTransitionMatrix().get(1).set(0, old + 1);
+                                    } else if (secondSource.charAt(i) == '1') {
+                                        int old = transitionMatrix.getTransitionMatrix().get(1).get(1);
+                                        transitionMatrix.getTransitionMatrix().get(1).set(1, old + 1);
+                                    }
                                 }
-                            });
+                            }
+
+                            metrics
+                                    .get(ref.countOfNumber)
+                                    .add(Collections.singletonMap(columnsBuilder.toString(), 0.0));
+
+                            columnsBuilder.delete(0, columnsBuilder.length());
+                        }
+                    }
                 });
+            });
+            ref.countOfNumber++;
+        });
+
+        System.out.println(metrics);
+
+        // TODO: Формирование сложных признаков:
+
+        // TODO: Откидывание сложных признаков по параметру betta:
+
+        // TODO: Переход в новое пространство признаков (параметр gamma):
     }
 }

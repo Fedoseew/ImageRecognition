@@ -14,7 +14,23 @@ import java.util.logging.Logger;
 
 public final class DatabaseUtils {
 
-    public static String[] selectAllSourcesQueries() {
+    public static String[] selectAllSourcesFromDb() {
+        String[] result = new String[10];
+        result[0] = "select source from " + DB_TABLES.source_zero;
+        result[1] = "select source from " + DB_TABLES.source_one;
+        result[2] = "select source from " + DB_TABLES.source_two;
+        result[3] = "select source from " + DB_TABLES.source_three;
+        result[4] = "select source from " + DB_TABLES.source_four;
+        result[5] = "select source from " + DB_TABLES.source_five;
+        result[6] = "select source from " + DB_TABLES.source_six;
+        result[7] = "select source from " + DB_TABLES.source_seven;
+        result[8] = "select source from " + DB_TABLES.source_eight;
+        result[9] = "select source from " + DB_TABLES.source_nine;
+
+        return result;
+    }
+
+    public static String[] selectAllFromDb() {
         String[] result = new String[10];
         result[0] = "select * from " + DB_TABLES.source_zero;
         result[1] = "select * from " + DB_TABLES.source_one;

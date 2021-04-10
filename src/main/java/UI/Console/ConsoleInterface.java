@@ -2,7 +2,7 @@ package UI.Console;
 
 import Configurations.ApplicationConfiguration;
 import Database.DB_TABLES;
-import Logic.ImageParserToBinaryCode;
+import Logic.ConsoleImageParserToBinaryCode;
 import Logic.ImageRecognition;
 
 import java.io.*;
@@ -66,7 +66,7 @@ public class ConsoleInterface {
         generateText();
 
         StringBuilder stringBuilder = new StringBuilder();
-        ImageParserToBinaryCode imageParserToBinaryCode = new ImageParserToBinaryCode();
+        ConsoleImageParserToBinaryCode consoleImageParserToBinaryCode = new ConsoleImageParserToBinaryCode();
         ImageRecognition imageRecognition = new ImageRecognition();
 
         int checkerForWrongInputText = 0;
@@ -118,7 +118,7 @@ public class ConsoleInterface {
         };
 
         Map<DB_TABLES, Integer> result = imageRecognition.recognition(
-                imageParserToBinaryCode
+                consoleImageParserToBinaryCode
                         .consoleParserInputNumber(stringBuilder, sizeOfConsoleMatrix, writer), settings
         );
 

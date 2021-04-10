@@ -3,7 +3,7 @@ package Logic;
 import java.io.BufferedWriter;
 import java.io.IOException;
 
-public class ImageParserToBinaryCode {
+public class ConsoleImageParserToBinaryCode {
 
     public String consoleParserInputNumber(StringBuilder stringBuilder, int sizeOfConsoleMatrix,
                                     BufferedWriter writer) throws IOException {

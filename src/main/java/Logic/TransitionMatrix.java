@@ -9,6 +9,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+class InformativeY {
+    protected static Double I0_Y;
+    protected static DB_TABLES table;
+}
+
 public class TransitionMatrix {
 
     private final List<List<Integer>> transitionMatrix;
@@ -29,22 +34,29 @@ public class TransitionMatrix {
     }
 
     public double getI0_Y() {
+        if (
+                InformativeY.I0_Y == null
+                        || InformativeY.table == null
+                        || !InformativeY.table.equals(table)
+        ) {
 
-        AtomicInteger sumOfAllElements = new AtomicInteger();
-        transitionMatrix.forEach(row -> {
-            row.forEach(sumOfAllElements::addAndGet);
-        });
+            InformativeY.table = table;
 
-        return
-                (double) CombinatoricsUtils.factorial(sumOfAllElements.get()) /
-                        (CombinatoricsUtils.factorial(
-                                (transitionMatrix.get(0).get(0) + transitionMatrix.get(1).get(0))) *
-                                CombinatoricsUtils.factorial(
-                                        (transitionMatrix.get(0).get(1) + transitionMatrix.get(1).get(1))));
+            AtomicInteger sumOfAllElements = new AtomicInteger();
+            transitionMatrix.forEach(row -> row.forEach(sumOfAllElements::addAndGet));
+
+            InformativeY.I0_Y = (double) CombinatoricsUtils.factorial(sumOfAllElements.get()) /
+                    (CombinatoricsUtils.factorial(
+                            (transitionMatrix.get(0).get(0) + transitionMatrix.get(1).get(0))) *
+                            CombinatoricsUtils.factorial(
+                                    (transitionMatrix.get(0).get(1) + transitionMatrix.get(1).get(1))));
+
+        }
+        return log2(InformativeY.I0_Y);
     }
 
-    public double getI0_YX() {
-        return ((double) CombinatoricsUtils.factorial(
+    private double getI0_YX() {
+        return log2(((double) CombinatoricsUtils.factorial(
                 transitionMatrix.get(0).get(0) + transitionMatrix.get(0).get(1)) /
                 (
                         CombinatoricsUtils.factorial(transitionMatrix.get(0).get(0)) *
@@ -55,16 +67,17 @@ public class TransitionMatrix {
                         (
                                 CombinatoricsUtils.factorial(transitionMatrix.get(1).get(0)) *
                                         CombinatoricsUtils.factorial(transitionMatrix.get(1).get(1))
-                        ));
+                        )));
     }
 
     private double calculateInformative() {
 
-        //HINT: log2(x) = log10(x) / log10(2)
-        double informative0_Y = getI0_Y();
         double informative0_YX = getI0_YX();
+        double informative0_Y;
+        informative0_Y = getI0_Y();
 
-        double informative = Math.log10(informative0_Y / informative0_YX) / Math.log10(2);
+        // HINT: I0(X:Y) = I0(Y) – I0(Y|X) = I0(X) – I0(X|Y)
+        double informative = informative0_Y - informative0_YX;
 
         BigDecimal bd = new BigDecimal(Double.toString(informative));
         bd = bd.setScale(2, RoundingMode.HALF_UP);
@@ -76,6 +89,10 @@ public class TransitionMatrix {
         return calculateInformative();
     }
 
+    // HINT: log2(x) = log10(x) / log10(2)
+    private double log2(double n) {
+        return Math.log10(n) / Math.log10(2);
+    }
 
     @Override
     public String toString() {
@@ -84,26 +101,7 @@ public class TransitionMatrix {
         stringBuilder.append("\nTransition matrix for table [").append(table)
                 .append("] for column [").append(columnIndex).append("]:\n");
 
-        for (int rowIndex = 0; rowIndex < transitionMatrix.size(); rowIndex++) {
-
-            for (int indexInRow = 0; indexInRow < transitionMatrix.get(rowIndex).size(); indexInRow++) {
-
-                int element = transitionMatrix
-                        .get(rowIndex)
-                        .get(indexInRow);
-
-                stringBuilder
-                        .append("(")
-                        .append(rowIndex)
-                        .append("->")
-                        .append(indexInRow)
-                        .append(": ")
-                        .append(element)
-                        .append(") ");
-            }
-
-            stringBuilder.append("\n");
-        }
+        TransitionMatrixForIndices.matrixToString(stringBuilder, transitionMatrix);
 
         stringBuilder.append("Informative: ").append(calculateInformative());
 
