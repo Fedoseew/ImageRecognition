@@ -165,21 +165,20 @@ public class ImageRecognition {
         Map<Integer, List<List<String>>> clusters = new TreeMap<>();
 
         // Кластеризация признаков:
-        clustering(clusters, metrics);
+        clustering(clusters, metrics, 0.55);
 
         System.out.println(metrics);
         System.out.println(clusters);
 
         // TODO: Формирование сложных признаков:
         // Откидывание сложных признаков по параметру betta:
-        filteringByBetta(betta, allTransitionMatrices);
+        //filteringByBetta(betta, allTransitionMatrices);
         // TODO: Откидывание сложных признаков по параметру betta:
-
         // TODO: Переход в новое пространство признаков (параметр gamma):
     }
 
 
-    //    -   //     -    //     -     //         Вспомогательные методы           //   -    //     -    //      -    //
+    //---------------------------------------------Вспомогательные методы---------------------------------------------//
 
     /**
      * Проверка во что переходит элемент
@@ -334,10 +333,11 @@ public class ImageRecognition {
      * @param clusters - кластеры
      * @param metrics  - расстояния
      */
-    private void clustering(Map<Integer, List<List<String>>> clusters, Map<Integer, List<Map<String, Double>>> metrics) {
+    private void clustering(Map<Integer, List<List<String>>> clusters, Map<Integer, List<Map<String, Double>>> metrics,
+                            double maxMetricCoefficient) {
         metrics.forEach((number, listOfIndices) -> {
             clusters.put(number, new ArrayList<>());
-            AtomicReference<Double> maxValue = new AtomicReference<>((double) 0);
+            AtomicReference<Double> maxValue = new AtomicReference<>(0.0);
 
             listOfIndices.forEach(stringDoubleMap -> {
                 stringDoubleMap.forEach((key, value) -> {
@@ -349,7 +349,7 @@ public class ImageRecognition {
             });
 
             // Ставим максимально допустимое расстояние между признаками в одном кластере равное 30% от максимального расстояния:
-            double maxMetric = maxValue.get() * 0.55;
+            double maxMetric = maxValue.get() * maxMetricCoefficient;
 
             // Создаем пустые I и II кластер:
             clusters.get(number).add(new ArrayList<>());
