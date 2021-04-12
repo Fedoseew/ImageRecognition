@@ -1,7 +1,12 @@
 package Logic;
 
+import org.apache.commons.math3.util.CombinatoricsUtils;
+
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
 
 class TransitionMatrixForIndices {
     private final int Xi;
@@ -27,6 +32,42 @@ class TransitionMatrixForIndices {
 
     public List<List<Integer>> getTransitionMatrix() {
         return transitionMatrix;
+    }
+
+    private double getI0_XiXj() {
+        return TransitionMatrix.log2(((double) CombinatoricsUtils.factorial(
+                transitionMatrix.get(0).get(0) + transitionMatrix.get(0).get(1)) /
+                (
+                        CombinatoricsUtils.factorial(transitionMatrix.get(0).get(0)) *
+                                CombinatoricsUtils.factorial(transitionMatrix.get(0).get(1))
+                )) *
+                ((double) CombinatoricsUtils.factorial(
+                        (transitionMatrix.get(1).get(0) + transitionMatrix.get(1).get(1))) /
+                        (
+                                CombinatoricsUtils.factorial(transitionMatrix.get(1).get(0)) *
+                                        CombinatoricsUtils.factorial(transitionMatrix.get(1).get(1))
+                        )));
+    }
+
+    private double getI0_XjXi() {
+        return TransitionMatrix.log2(((double) CombinatoricsUtils.factorial(
+                transitionMatrix.get(0).get(0) + transitionMatrix.get(1).get(0)) /
+                (
+                        CombinatoricsUtils.factorial(transitionMatrix.get(0).get(0)) *
+                                CombinatoricsUtils.factorial(transitionMatrix.get(1).get(0))
+                )) *
+                ((double) CombinatoricsUtils.factorial(
+                        (transitionMatrix.get(0).get(1) + transitionMatrix.get(1).get(1))) /
+                        (
+                                CombinatoricsUtils.factorial(transitionMatrix.get(0).get(1)) *
+                                        CombinatoricsUtils.factorial(transitionMatrix.get(1).get(1))
+                        )));
+    }
+
+    public double calculateMetricBetweenXiAndXj() {
+        BigDecimal bd = new BigDecimal(Double.toString((double) 1/2 * (getI0_XiXj() + getI0_XjXi())));
+        bd = bd.setScale(2, RoundingMode.HALF_UP);
+        return bd.doubleValue();
     }
 
     @Override

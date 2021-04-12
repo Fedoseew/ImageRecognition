@@ -15,6 +15,15 @@ public class ImageRecognition {
 
     private final String[] queries = DatabaseUtils.selectAllFromDb();
 
+    /**
+     * Распознование образа сравнивая со значениями из БД.
+     *
+     * @param source   - распарсенный код картинки в двоичном коде.
+     * @param settings - настройки (параметры альфа, бетта и гамма).
+     * @return Map<DB_TABLES, Integer> - мапу, где ключ - таблица, в которой произошло совпадение, значение - распознанное число.
+     * @throws SQLException выкидывается при ошибках соединения или работы с БД.
+     */
+
     public Map<DB_TABLES, Integer> recognition(String source, int[] settings) throws SQLException {
 
         int alpha = settings[0];
@@ -27,9 +36,11 @@ public class ImageRecognition {
 
         if (!connection.isClosed()) {
 
+            // Цикл по таблицам:
             for (int countOfQuery = 0; countOfQuery < queries.length; countOfQuery++) {
                 ResultSet rs = DatabaseUtils.selectQuery(queries[countOfQuery]);
 
+                // Цикл по строкам таблицы и поиск совпадений:
                 while (rs.next()) {
                     int conditionResult = binaryCodeComparator.compare(rs.getString(1), source);
 
@@ -48,12 +59,19 @@ public class ImageRecognition {
             }
             smartRecognition(alpha, betta, gamma);
         }
-
         return result;
     }
 
-    private void smartRecognition(int alpha, int betta, int gamma) throws SQLException {
+    /**
+     * Распознование образа по алгоритму из курсовой.
+     *
+     * @param alpha - параметр настройки альфа.
+     * @param betta - параметр настройки бетта.
+     * @param gamma - параметр настройки гамма.
+     * @throws SQLException выкидывается при ошибках соединения или работы с БД.
+     */
 
+    private void smartRecognition(int alpha, int betta, int gamma) throws SQLException {
         AtomicReference<ResultSet> resultSet = new AtomicReference<>();
 
         /* Все матрицы переходов: */
@@ -77,24 +95,24 @@ public class ImageRecognition {
             List<String> sourceColumnData = new ArrayList<>();
             List<String> isTrueColumnData = new ArrayList<>();
 
-
             while (resultSet.get().next()) {
                 sourceColumnData.add(resultSet.get().getString(1));
                 isTrueColumnData.add(resultSet.get().getString(2));
             }
 
             /* Цикл по колонкам таблицы: */
-            for (int columnIndex = 0; columnIndex < Math.pow(
-                    ApplicationConfiguration.getSizeOfGrid(), 2); columnIndex++) {
+            for (
+                    int columnIndex = 0;
+                    columnIndex < Math.pow(ApplicationConfiguration.getSizeOfGrid(), 2);
+                    columnIndex++
+            ) {
 
                 /* Матрица перехода для конкретной таблицы и колонки: */
-                TransitionMatrix transitionMatrix = new TransitionMatrix(
-                        DB_TABLES.valueOf(queries[countOfQuery].substring(14)), columnIndex + 1);
+                DB_TABLES dbTable = DB_TABLES.valueOf(queries[countOfQuery].substring(14));
+                TransitionMatrix transitionMatrix = new TransitionMatrix(dbTable, columnIndex + 1);
 
-                /*
-                 Массив количества переходов элементов, где индексы идут в следующем соотвествии:
-                  0->0, 0->1, 1->0, 1->1 :
-                */
+                /* Массив количества переходов элементов, где индексы идут в следующем соотвествии:
+                0->0, 0->1, 1->0, 1->1 : */
                 List<Integer> countOfTransitionElement = Arrays.asList(0, 0, 0, 0);
 
                 StringBuilder indicesBuilder = new StringBuilder();
@@ -109,42 +127,20 @@ public class ImageRecognition {
                     /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит: */
                     try {
                         indicesBuilder.append(sourceColumnData.get(sourceRowIndex).charAt(columnIndex));
-
-                        if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
-
-                            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
-                                int tmp = countOfTransitionElement.get(0) + 1;
-                                countOfTransitionElement.set(0, tmp);
-
-                            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
-                                int tmp = countOfTransitionElement.get(1) + 1;
-                                countOfTransitionElement.set(1, tmp);
-
-                            }
-
-                        } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
-
-                            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
-                                int tmp = countOfTransitionElement.get(2) + 1;
-                                countOfTransitionElement.set(2, tmp);
-
-                            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
-                                int tmp = countOfTransitionElement.get(3) + 1;
-                                countOfTransitionElement.set(3, tmp);
-                            }
-                        }
-
+                        checkTransition(isTrueColumnData, countOfTransitionElement, isTrueRowIndex,
+                                sourceColumnData, sourceRowIndex, columnIndex);
                     } catch (Exception ignored) {
                     }
                 }
 
+                // Добавление признака в массив всех признаков:
                 indices.get(countOfQuery).put(columnIndex + 1, indicesBuilder.toString());
 
+                // Инициализация матрицы перехода:
                 transitionMatrix
                         .getTransitionMatrix()
                         .add(Arrays.asList(countOfTransitionElement.get(0), countOfTransitionElement.get(1)
                         ));
-
                 transitionMatrix
                         .getTransitionMatrix()
                         .add(Arrays.asList(countOfTransitionElement.get(2), countOfTransitionElement.get(3)
@@ -153,76 +149,151 @@ public class ImageRecognition {
                 tableInformative.put(columnIndex + 1, transitionMatrix.getInformative());
                 tableTransitionMatrix.add(transitionMatrix);
             }
-
+            // Добавление информативности и матрицы перехода:
             informative.add(tableInformative);
             allTransitionMatrices.add(tableTransitionMatrix);
         }
-
         // Откидывание признаков по параметру alpha:
-        double alphaProcent;
-
-        if (alpha > 0) {
-
-            alphaProcent = allTransitionMatrices
-                    .get(1)
-                    .get(0)
-                    .getI0_Y()
-                    * ((double) alpha) / 100;
-
-            Double finalAlphaProcent = alphaProcent;
-            List.copyOf(informative)
-                    .forEach(tableInformative -> {
-                        Map.copyOf(tableInformative)
-                                .forEach((column, informativeOfColumn) -> {
-                                    if (informativeOfColumn < finalAlphaProcent) {
-                                        tableInformative.remove(column);
-                                    }
-                                });
-                    });
-        }
-
-
-        /* TODO: Расчёт расстояний между признаками:
-         * P(Xi, Xj) = 1/2 * { I0(Xi|Xj) + I0(Xj|Xi) }
-         */
+        filteringByAlpha(alpha, allTransitionMatrices, informative);
 
         /* Расстояния (key - номер таблицы (0..9),
-         * value - список сложных признаков (key - индекс сложного признака, value - расстояние)):
-         */
+           value - список мап сложных признаков (key - индекс сложного признака, value - расстояние)): */
         Map<Integer, List<Map<String, Double>>> metrics = new TreeMap<>();
 
-        StringBuilder columnsBuilder = new StringBuilder();
+        // Расчёт расстояний между признаками: P(Xi, Xj) = 1/2 * [I0(Xi|Xj) + I0(Xj|Xi)]
+        calculateMetrics(informative, metrics, indices);
+
+        // TODO: Кластеризация признаков:
+        // Мапа кластеров (key - число (номер таблицы), value - массив из кластеров (кластер - массив из признаков)):
+        Map<Integer, List<List<String>>> clusters = new TreeMap<>();
+        clustering(clusters, metrics);
+
+        System.out.println(clusters);
+
+        // TODO: Формирование сложных признаков:
+        // Откидывание сложных признаков по параметру betta:
+        filteringByBetta(betta, allTransitionMatrices);
+        // TODO: Откидывание сложных признаков по параметру betta:
+
+        // TODO: Переход в новое пространство признаков (параметр gamma):
+    }
 
 
+    //    -   //     -    //     -     //         Вспомогательные методы           //   -    //     -    //      -    //
+
+    /**
+     * Проверка во что переходит элемент
+     *
+     * @param isTrueColumnData         - массив значений во что переходит
+     * @param countOfTransitionElement - массив счётчиков перехоода
+     * @param isTrueRowIndex           - индекс колонки со значениями TRUE/FALSE
+     * @param sourceColumnData         - массив значений из колонки source
+     * @param sourceRowIndex           - индекс колонки со значениями source
+     * @param columnIndex              - индекс колонки
+     */
+    private void checkTransition(List<String> isTrueColumnData,
+                                 List<Integer> countOfTransitionElement, int isTrueRowIndex,
+                                 List<String> sourceColumnData, int sourceRowIndex, int columnIndex) {
+        if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '0') {
+            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
+                int tmp = countOfTransitionElement.get(0) + 1;
+                countOfTransitionElement.set(0, tmp);
+
+            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
+                int tmp = countOfTransitionElement.get(1) + 1;
+                countOfTransitionElement.set(1, tmp);
+
+            }
+
+        } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
+
+            if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
+                int tmp = countOfTransitionElement.get(2) + 1;
+                countOfTransitionElement.set(2, tmp);
+
+            } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
+                int tmp = countOfTransitionElement.get(3) + 1;
+                countOfTransitionElement.set(3, tmp);
+            }
+        }
+    }
+
+    /**
+     * Фильтрация признаков (по информативности) по параметру alpha
+     *
+     * @param alpha                 - параметр alpha
+     * @param allTransitionMatrices - все матрицы перехода
+     * @param informative           - все информативности
+     */
+    private void filteringByAlpha(int alpha, List<List<TransitionMatrix>> allTransitionMatrices,
+                                  List<Map<Integer, Double>> informative) {
+        double alphaProcent = allTransitionMatrices
+                .get(1)
+                .get(0)
+                .getI0_Y()
+                * ((double) alpha) / 100;
+
+        List.copyOf(informative)
+                .forEach(tableInformative -> {
+                    Map.copyOf(tableInformative)
+                            .forEach((column, informativeOfColumn) -> {
+                                if (informativeOfColumn < alphaProcent) {
+                                    tableInformative.remove(column);
+                                }
+                            });
+                });
+    }
+
+    /**
+     * Фильтрация по параметру betta
+     *
+     * @param betta                 - параметр betta
+     * @param allTransitionMatrices - все матрицы перехода
+     */
+    private void filteringByBetta(int betta, List<List<TransitionMatrix>> allTransitionMatrices) {
+        double bettaProcent = allTransitionMatrices
+                .get(1)
+                .get(0)
+                .getI0_Y()
+                * ((double) betta) / 100;
+    }
+
+    /**
+     * Расчёт расстояний между признаками
+     *
+     * @param informative - все информативности
+     * @param metrics     - расстояния
+     * @param indices     - признаки
+     */
+    private void calculateMetrics(List<Map<Integer, Double>> informative,
+                                  Map<Integer, List<Map<String, Double>>> metrics,
+                                  Map<Integer, Map<Integer, String>> indices) {
         var ref = new Object() {
             int countOfNumber = 0;
         };
 
+        StringBuilder columnsBuilder = new StringBuilder();
+
         informative.forEach(tableInformative -> {
-
             metrics.put(ref.countOfNumber, new ArrayList<>());
-
             tableInformative.forEach((column1, informativeOfColumn1) -> {
-
                 tableInformative.forEach((column2, informativeOfColumn2) -> {
-
                     if (!column1.equals(column2)) {
-
-                        // Проверка на дубликаты (HINT: признак 12 == 21):
+                        // Проверка на дубликаты (HINT: признак X1X2 == X2X1):
                         AtomicBoolean duplicates = new AtomicBoolean(false);
 
                         metrics.forEach((key, value) -> value.forEach(x -> {
-                            if (x.containsKey(String.valueOf(column1) + column2)
-                                    || x.containsKey(String.valueOf(column2) + column1)) {
-                                duplicates.set(x.containsKey(String.valueOf(column1) + column2)
-                                        || x.containsKey(String.valueOf(column2) + column1));
+                            boolean conditional = x.containsKey("X" + column1 + "|" + "X" + column2)
+                                    || x.containsKey("X" + column2 + "|" + "X" + column1);
+                            if (conditional) {
+                                duplicates.set(true);
                             }
                         }));
 
                         if (!duplicates.get()) {
 
                             // Расчёт по формуле, добавление в map с метриками и формирование сложных признаков:
-                            columnsBuilder.append(column1).append(column2);
+                            columnsBuilder.append("X").append(column1).append("|X").append(column2);
 
                             TransitionMatrixForIndices transitionMatrix = new TransitionMatrixForIndices(column1, column2);
                             String firstSource = indices.get(ref.countOfNumber).get(column1);
@@ -249,11 +320,10 @@ public class ImageRecognition {
                                     }
                                 }
                             }
-
                             metrics
                                     .get(ref.countOfNumber)
-                                    .add(Collections.singletonMap(columnsBuilder.toString(), 0.0));
-
+                                    .add(Collections.singletonMap(columnsBuilder.toString(),
+                                            transitionMatrix.calculateMetricBetweenXiAndXj()));
                             columnsBuilder.delete(0, columnsBuilder.length());
                         }
                     }
@@ -261,13 +331,57 @@ public class ImageRecognition {
             });
             ref.countOfNumber++;
         });
+    }
 
-        System.out.println(metrics);
+    /**
+     * Кластеризация признаков
+     *
+     * @param clusters - кластеры
+     * @param metrics  - расстояния
+     */
+    private void clustering(Map<Integer, List<List<String>>> clusters, Map<Integer, List<Map<String, Double>>> metrics) {
+        metrics.forEach((number, listOfIndices) -> {
+            clusters.put(number, new ArrayList<>());
+            AtomicReference<Double> maxValue = new AtomicReference<>((double) 0);
 
-        // TODO: Формирование сложных признаков:
+            listOfIndices.forEach(stringDoubleMap -> {
+                stringDoubleMap.forEach((key, value) -> {
+                    // Находим максимальное расстояние между признаками:
+                    if (value > maxValue.get()) {
+                        maxValue.set(value);
+                    }
+                });
+            });
 
-        // TODO: Откидывание сложных признаков по параметру betta:
+            // Ставим максимально допустимое расстояние между признаками в одном кластере равное 30% от максимального расстояния:
+            double maxMetric = maxValue.get() * 0.6;
 
-        // TODO: Переход в новое пространство признаков (параметр gamma):
+            // Первый кластер:
+            clusters.get(number).add(new ArrayList<>());
+
+            // Добавляем в первый кластер первый признак:
+            try {
+                listOfIndices.get(0).keySet().forEach(key -> {
+                    clusters.get(number).get(0).add(key.split("\\|")[0]);
+                });
+
+                // Добавляем в первый кластер признаки, которые близко к первому признаку:
+                listOfIndices.forEach(stringDoubleMap -> {
+                    stringDoubleMap.keySet().forEach(key -> {
+                        if (key.split("\\|")[0].equals(clusters.get(number).get(0).get(0))) {
+                            if (stringDoubleMap.get(key) <= maxMetric) {
+                                clusters.get(number).get(0).add(key.split("\\|")[1]);
+                            }
+                        }
+                    });
+                });
+
+                for (int i = 1; i < clusters.get(number).get(0).size(); i++) {
+
+                }
+
+            } catch (IndexOutOfBoundsException ignored) {
+            }
+        });
     }
 }

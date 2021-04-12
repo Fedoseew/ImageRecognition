@@ -73,8 +73,7 @@ public class TransitionMatrix {
     private double calculateInformative() {
 
         double informative0_YX = getI0_YX();
-        double informative0_Y;
-        informative0_Y = getI0_Y();
+        double informative0_Y = getI0_Y();
 
         // HINT: I0(X:Y) = I0(Y) – I0(Y|X) = I0(X) – I0(X|Y)
         double informative = informative0_Y - informative0_YX;
@@ -90,7 +89,7 @@ public class TransitionMatrix {
     }
 
     // HINT: log2(x) = log10(x) / log10(2)
-    private double log2(double n) {
+    public static double log2(double n) {
         return Math.log10(n) / Math.log10(2);
     }
 
