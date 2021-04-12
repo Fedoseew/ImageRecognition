@@ -123,14 +123,12 @@ public class ImageRecognition {
                         sourceRowIndex < sourceColumnData.size() && isTrueRowIndex < isTrueColumnData.size();
                         sourceRowIndex++, isTrueRowIndex++
                 ) {
-
                     /* Проверки на соответствие элемента числу 0 или 1 и во что он переходит: */
                     try {
                         indicesBuilder.append(sourceColumnData.get(sourceRowIndex).charAt(columnIndex));
                         checkTransition(isTrueColumnData, countOfTransitionElement, isTrueRowIndex,
                                 sourceColumnData, sourceRowIndex, columnIndex);
-                    } catch (Exception ignored) {
-                    }
+                    } catch (Exception ignored) {}
                 }
 
                 // Добавление признака в массив всех признаков:
@@ -163,11 +161,13 @@ public class ImageRecognition {
         // Расчёт расстояний между признаками: P(Xi, Xj) = 1/2 * [I0(Xi|Xj) + I0(Xj|Xi)]
         calculateMetrics(informative, metrics, indices);
 
-        // TODO: Кластеризация признаков:
         // Мапа кластеров (key - число (номер таблицы), value - массив из кластеров (кластер - массив из признаков)):
         Map<Integer, List<List<String>>> clusters = new TreeMap<>();
+
+        // Кластеризация признаков:
         clustering(clusters, metrics);
 
+        System.out.println(metrics);
         System.out.println(clusters);
 
         // TODO: Формирование сложных признаков:
@@ -198,19 +198,14 @@ public class ImageRecognition {
             if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
                 int tmp = countOfTransitionElement.get(0) + 1;
                 countOfTransitionElement.set(0, tmp);
-
             } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
                 int tmp = countOfTransitionElement.get(1) + 1;
                 countOfTransitionElement.set(1, tmp);
-
             }
-
         } else if (sourceColumnData.get(sourceRowIndex).charAt(columnIndex) == '1') {
-
             if (isTrueColumnData.get(isTrueRowIndex).equals("FALSE")) {
                 int tmp = countOfTransitionElement.get(2) + 1;
                 countOfTransitionElement.set(2, tmp);
-
             } else if (isTrueColumnData.get(isTrueRowIndex).equals("TRUE")) {
                 int tmp = countOfTransitionElement.get(3) + 1;
                 countOfTransitionElement.set(3, tmp);
@@ -354,9 +349,10 @@ public class ImageRecognition {
             });
 
             // Ставим максимально допустимое расстояние между признаками в одном кластере равное 30% от максимального расстояния:
-            double maxMetric = maxValue.get() * 0.6;
+            double maxMetric = maxValue.get() * 0.55;
 
-            // Первый кластер:
+            // Создаем пустые I и II кластер:
+            clusters.get(number).add(new ArrayList<>());
             clusters.get(number).add(new ArrayList<>());
 
             // Добавляем в первый кластер первый признак:
@@ -376,12 +372,41 @@ public class ImageRecognition {
                     });
                 });
 
+                // Добавляем в первый кластер признаки, которые близко к остальным попавшим в кластер признакам:
                 for (int i = 1; i < clusters.get(number).get(0).size(); i++) {
-
+                    int finalI = i;
+                    listOfIndices.forEach(stringDoubleMap -> {
+                        stringDoubleMap.keySet().forEach(key -> {
+                            if(key.split("\\|")[0].equals(clusters.get(number).get(0).get(finalI))) {
+                                if (stringDoubleMap.get(key) <= maxMetric) {
+                                    if(!clusters.get(number).get(0).contains(key.split("\\|")[1])) {
+                                        clusters.get(number).get(0).add(key.split("\\|")[1]);
+                                    }
+                                }
+                            }
+                        });
+                    });
                 }
 
-            } catch (IndexOutOfBoundsException ignored) {
-            }
+                listOfIndices.forEach(stringDoubleMap -> {
+                    stringDoubleMap.keySet().forEach(key -> {
+                        if(
+                                !clusters.get(number).get(0).contains(key.split("\\|")[0])
+                                && !clusters.get(number).get(1).contains(key.split("\\|")[0])
+                        ) {
+                            clusters.get(number).get(1).add(key.split("\\|")[0]);
+                        }
+
+                        if(
+                                !clusters.get(number).get(0).contains(key.split("\\|")[1])
+                                && !clusters.get(number).get(1).contains(key.split("\\|")[1])
+                        ) {
+                            clusters.get(number).get(1).add(key.split("\\|")[1]);
+                        }
+                    });
+                });
+
+            } catch (IndexOutOfBoundsException ignored) {}
         });
     }
 }
