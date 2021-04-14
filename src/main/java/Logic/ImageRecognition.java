@@ -332,8 +332,10 @@ public class ImageRecognition {
     /**
      * Кластеризация признаков
      *
-     * @param clusters - кластеры
-     * @param metrics  - расстояния
+     * @param clusters             - массив кластеров для сохрнения данных
+     * @param metrics              - расстояния между признаками
+     * @param maxMetricCoefficient - коэффициент попадания в кластер (берётся от максимального расстояния)
+     * @param informative          - информативности признаков
      */
     private void clustering(Map<Integer, List<List<String>>> clusters, Map<Integer, List<Map<String, Double>>> metrics,
                             double maxMetricCoefficient, List<Map<Integer, Double>> informative) {
@@ -417,8 +419,7 @@ public class ImageRecognition {
 
                     i++;
 
-                } catch (IndexOutOfBoundsException ignored) {
-                }
+                } catch (IndexOutOfBoundsException ignored) {}
             }
         });
     }

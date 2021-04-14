@@ -3,8 +3,8 @@ package UI.Desktop;
 import Configurations.ApplicationConfiguration;
 import Database.DB_TABLES;
 import Database.DatabaseUtils;
-import Logic.ImageRecognition;
 import Database.InsertScriptsFileUtils;
+import Logic.ImageRecognition;
 import javafx.beans.value.ObservableValue;
 import javafx.fxml.FXML;
 import javafx.scene.Cursor;
@@ -95,40 +95,39 @@ public class MainController {
         ListView<?> cell = new ListView<>();
 
         cell.setCursor(Cursor.HAND);
-        cell.setStyle("-fx-background-color: inherit");
-        cell.setStyle("-fx-border-color: black");
+        cell.setStyle("-fx-background-color: white !important; -fx-border-color: black");
 
         cell.setOnMouseClicked(click -> {
 
             if (cell.getStyle().contains("-fx-background-color: black")) {
 
-                cell.setStyle("-fx-background-color: inherit");
+                cell.setStyle("-fx-background-color: white; -fx-border-color: black");
                 setValue(cell, false);
 
             } else {
-
-                cell.setStyle("-fx-background-color: black");
+                cell.setStyle("-fx-background-color: black; -fx-border-color: black");
                 setValue(cell, true);
 
             }
         });
 
-        cell.hoverProperty().addListener((ObservableValue<? extends Boolean> observable,
-                                          Boolean oldValue, Boolean newValue) -> {
+        cell.hoverProperty()
+                .addListener((ObservableValue<? extends Boolean> observable,
+                              Boolean oldValue, Boolean newValue) -> {
 
-            if (!cell.getStyle().contains("-fx-background-color: black")) {
+                    if (!cell.getStyle().contains("-fx-background-color: black")) {
 
-                if (newValue) {
+                        if (newValue) {
 
-                    cell.setStyle("-fx-background-color: #797979");
+                            cell.setStyle("-fx-background-color: #425c81; -fx-border-color: black");
 
-                } else {
+                        } else {
 
-                    cell.setStyle("-fx-background-color: inherit");
-                    cell.setStyle("-fx-border-color: black");
-                }
-            }
-        });
+                            cell.setStyle("-fx-background-color: white; -fx-border-color: black");
+
+                        }
+                    }
+                });
 
         return cell;
     }
@@ -197,8 +196,7 @@ public class MainController {
 
             cell.keySet().forEach(node -> {
 
-                node.setStyle("-fx-background-color: inherit");
-                node.setStyle("-fx-border-color: black");
+                node.setStyle("-fx-background-color: white; -fx-border-color: black");
 
             });
             cell.entrySet().forEach(entry -> entry.setValue(false));
