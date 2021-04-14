@@ -25,11 +25,12 @@ public class ImageRecognition {
      * @throws SQLException выкидывается при ошибках соединения или работы с БД.
      */
 
-    public Map<DB_TABLES, Integer> recognition(String source, int[] settings) throws SQLException {
+    public Map<DB_TABLES, Integer> recognition(String source, Object[] settings) throws SQLException {
 
-        int alpha = settings[0];
-        int betta = settings[1];
-        int gamma = settings[2];
+        int alpha = (int) settings[0];
+        int betta = (int) settings[1];
+        int gamma = (int) settings[2];
+        double minMetric = (double) settings[3];
 
         Connection connection = DatabaseUtils.getConnection();
         BinaryCodeComparator binaryCodeComparator = new BinaryCodeComparator();
@@ -58,7 +59,7 @@ public class ImageRecognition {
                     }
                 }
             }
-            smartRecognition(alpha, betta, gamma);
+            smartRecognition(alpha, betta, gamma, minMetric);
         }
         return result;
     }
@@ -72,7 +73,7 @@ public class ImageRecognition {
      * @throws SQLException выкидывается при ошибках соединения или работы с БД.
      */
 
-    private void smartRecognition(int alpha, int betta, int gamma) throws SQLException {
+    private void smartRecognition(int alpha, int betta, int gamma, double minMetric) throws SQLException {
         AtomicReference<ResultSet> resultSet = new AtomicReference<>();
 
         /* Все матрицы переходов: */
@@ -167,12 +168,13 @@ public class ImageRecognition {
         Map<Integer, List<List<String>>> clusters = new TreeMap<>();
 
         // Кластеризация признаков:
-        clustering(clusters, metrics, 0.6, informative);
+        clustering(clusters, metrics, minMetric, informative);
 
         System.out.println(metrics);
         System.out.println(clusters);
 
         // TODO: Формирование сложных признаков:
+
         // Откидывание сложных признаков по параметру betta:
         //filteringByBetta(betta, allTransitionMatrices);
         // TODO: Откидывание сложных признаков по параметру betta:
@@ -407,7 +409,9 @@ public class ImageRecognition {
 
                                                 && value < maxMetric
 
-                                                && indices.get(number).contains(metric.split("\\|")[1])
+                                                && indices
+                                                .get(number)
+                                                .contains(metric.split("\\|")[1])
                                 ) {
                                     clusters.get(number).get(finalI1).add(metric.split("\\|")[1]);
                                     indices.get(number).remove(metric.split("\\|")[1]);
@@ -419,7 +423,8 @@ public class ImageRecognition {
 
                     i++;
 
-                } catch (IndexOutOfBoundsException ignored) {}
+                } catch (IndexOutOfBoundsException ignored) {
+                }
             }
         });
     }

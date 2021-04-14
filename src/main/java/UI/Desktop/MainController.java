@@ -57,6 +57,8 @@ public class MainController {
     @FXML
     private TextField gammaField;
 
+    @FXML
+    private TextField minMetric;
 
     @FXML
     void initialize() {
@@ -168,13 +170,21 @@ public class MainController {
 
             ImageRecognition imageRecognition = new ImageRecognition();
 
+            double metric = 0.5;
+
+            try {
+                metric = Double.parseDouble(minMetric.getText());
+            } catch (NumberFormatException ignored) {
+            }
+
             try {
 
                 Map<DB_TABLES, Integer> response = imageRecognition.recognition(parseImageToBinaryCode(),
-                        new int[]{
+                        new Object[]{
                                 (int) alphaScroll.getValue(),
                                 (int) bettaScroll.getValue(),
-                                (int) gammaScroll.getValue()
+                                (int) gammaScroll.getValue(),
+                                metric
                         });
 
                 createResponseNotification(response);
@@ -273,13 +283,18 @@ public class MainController {
             if (result.getButtonData().equals(ButtonBar.ButtonData.NO)) {
 
                 AtomicReference<DB_TABLES> db_table = new AtomicReference<>();
-
+                double metric = 0.5;
+                try {
+                    metric = Double.parseDouble(minMetric.getText());
+                } catch (NumberFormatException ignored) {
+                }
                 new ImageRecognition()
                         .recognition(parseImageToBinaryCode(),
-                                new int[]{
+                                new Object[]{
                                         (int) alphaScroll.getValue(),
                                         (int) bettaScroll.getValue(),
-                                        (int) gammaScroll.getValue()
+                                        (int) gammaScroll.getValue(),
+                                        metric
                                 })
                         .forEach((key, value) -> db_table.set(key));
 

@@ -110,11 +110,16 @@ public class ConsoleInterface {
         writer.write("GAMMA: ");
         writer.flush();
         String gamma = reader.readLine();
+        writer.write("MIN METRIC: ");
+        writer.flush();
+        String minMetric = reader.readLine();
 
-        int[] settings = new int[]{
+        Object[] settings = new Object[]{
                 Integer.parseInt(alpha),
                 Integer.parseInt(betta),
-                Integer.parseInt(gamma)
+                Integer.parseInt(gamma),
+                Double.parseDouble(minMetric)
+
         };
 
         Map<DB_TABLES, Integer> result = imageRecognition.recognition(
