@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class ImageRecognition {
@@ -128,7 +129,8 @@ public class ImageRecognition {
                         indicesBuilder.append(sourceColumnData.get(sourceRowIndex).charAt(columnIndex));
                         checkTransition(isTrueColumnData, countOfTransitionElement, isTrueRowIndex,
                                 sourceColumnData, sourceRowIndex, columnIndex);
-                    } catch (Exception ignored) {}
+                    } catch (Exception ignored) {
+                    }
                 }
 
                 // Добавление признака в массив всех признаков:
@@ -165,7 +167,7 @@ public class ImageRecognition {
         Map<Integer, List<List<String>>> clusters = new TreeMap<>();
 
         // Кластеризация признаков:
-        clustering(clusters, metrics, 0.55);
+        clustering(clusters, metrics, 0.6, informative);
 
         System.out.println(metrics);
         System.out.println(clusters);
@@ -334,7 +336,7 @@ public class ImageRecognition {
      * @param metrics  - расстояния
      */
     private void clustering(Map<Integer, List<List<String>>> clusters, Map<Integer, List<Map<String, Double>>> metrics,
-                            double maxMetricCoefficient) {
+                            double maxMetricCoefficient, List<Map<Integer, Double>> informative) {
         metrics.forEach((number, listOfIndices) -> {
             clusters.put(number, new ArrayList<>());
             AtomicReference<Double> maxValue = new AtomicReference<>(0.0);
@@ -351,62 +353,73 @@ public class ImageRecognition {
             // Ставим максимально допустимое расстояние между признаками в одном кластере равное 30% от максимального расстояния:
             double maxMetric = maxValue.get() * maxMetricCoefficient;
 
-            // Создаем пустые I и II кластер:
-            clusters.get(number).add(new ArrayList<>());
-            clusters.get(number).add(new ArrayList<>());
+            // Оставшиеся после откидывания по параметру alpha признаки:
+            Map<Integer, List<String>> indices = new TreeMap<>();
 
-            // Добавляем в первый кластер первый признак:
-            try {
-                listOfIndices.get(0).keySet().forEach(key -> {
-                    clusters.get(number).get(0).add(key.split("\\|")[0]);
-                });
+            indices.put(number, new ArrayList<>());
 
-                // Добавляем в первый кластер признаки, которые близко к первому признаку:
-                listOfIndices.forEach(stringDoubleMap -> {
-                    stringDoubleMap.keySet().forEach(key -> {
-                        if (key.split("\\|")[0].equals(clusters.get(number).get(0).get(0))) {
-                            if (stringDoubleMap.get(key) <= maxMetric) {
-                                clusters.get(number).get(0).add(key.split("\\|")[1]);
-                            }
-                        }
-                    });
-                });
+            informative.get(number).forEach((ind, inf) -> {
+                indices.get(number).add("X" + ind);
+            });
 
-                // Добавляем в первый кластер признаки, которые близко к остальным попавшим в кластер признакам:
-                for (int i = 1; i < clusters.get(number).get(0).size(); i++) {
-                    int finalI = i;
-                    listOfIndices.forEach(stringDoubleMap -> {
-                        stringDoubleMap.keySet().forEach(key -> {
-                            if(key.split("\\|")[0].equals(clusters.get(number).get(0).get(finalI))) {
-                                if (stringDoubleMap.get(key) <= maxMetric) {
-                                    if(!clusters.get(number).get(0).contains(key.split("\\|")[1])) {
-                                        clusters.get(number).get(0).add(key.split("\\|")[1]);
-                                    }
-                                }
-                            }
+            // Пока есть неотобранные в кластеры признаки:
+            int i = 0;
+            while (indices.get(number).size() > 0) {
+                int finalI = i;
+
+                // Берем самый первый признак из списка оставшихся признаков, добавляем в кластер, удаляем из списка:
+                Map.copyOf(indices)
+                        .get(number)
+                        .stream()
+                        .findFirst()
+                        .ifPresent(Xi -> {
+                            clusters.get(number).add(new ArrayList<>());
+                            clusters.get(number).get(finalI).add(Xi);
+                            indices.get(number).remove(Xi);
                         });
-                    });
+
+                try {
+
+                    AtomicInteger sizeOfCluster = new AtomicInteger(clusters.get(number).get(i).size());
+
+                    // Пробегаем динамически кластер, одновременно добавляя в него новый признаки:
+                    for (int indInCluster = 0; indInCluster < sizeOfCluster.get(); indInCluster++) {
+
+                        for (Map<String, Double> map : listOfIndices) {
+
+                            int finalIndInCluster = indInCluster;
+
+                            int finalI1 = i;
+                            map.forEach((metric, value) -> {
+                                if (
+                                        !clusters
+                                                .get(number)
+                                                .get(finalI1)
+                                                .contains(metric.split("\\|")[1])
+
+                                                && clusters.
+                                                get(number).
+                                                get(finalI1)
+                                                .get(finalIndInCluster)
+                                                .equals(metric.split("\\|")[0])
+
+                                                && value < maxMetric
+
+                                                && indices.get(number).contains(metric.split("\\|")[1])
+                                ) {
+                                    clusters.get(number).get(finalI1).add(metric.split("\\|")[1]);
+                                    indices.get(number).remove(metric.split("\\|")[1]);
+                                    sizeOfCluster.set(clusters.get(number).get(finalI1).size());
+                                }
+                            });
+                        }
+                    }
+
+                    i++;
+
+                } catch (IndexOutOfBoundsException ignored) {
                 }
-
-                listOfIndices.forEach(stringDoubleMap -> {
-                    stringDoubleMap.keySet().forEach(key -> {
-                        if(
-                                !clusters.get(number).get(0).contains(key.split("\\|")[0])
-                                && !clusters.get(number).get(1).contains(key.split("\\|")[0])
-                        ) {
-                            clusters.get(number).get(1).add(key.split("\\|")[0]);
-                        }
-
-                        if(
-                                !clusters.get(number).get(0).contains(key.split("\\|")[1])
-                                && !clusters.get(number).get(1).contains(key.split("\\|")[1])
-                        ) {
-                            clusters.get(number).get(1).add(key.split("\\|")[1]);
-                        }
-                    });
-                });
-
-            } catch (IndexOutOfBoundsException ignored) {}
+            }
         });
     }
 }
