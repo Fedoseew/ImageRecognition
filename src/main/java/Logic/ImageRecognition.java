@@ -334,7 +334,7 @@ public class ImageRecognition {
     /**
      * Кластеризация признаков
      *
-     * @param clusters             - массив кластеров для сохрнения данных
+     * @param clusters             - массив кластеров для сохранения данных
      * @param metrics              - расстояния между признаками
      * @param maxMetricCoefficient - коэффициент попадания в кластер (берётся от максимального расстояния)
      * @param informative          - информативности признаков
@@ -370,29 +370,27 @@ public class ImageRecognition {
             int i = 0;
             while (indices.get(number).size() > 0) {
                 int finalI = i;
-
-                // Берем самый первый признак из списка оставшихся признаков, добавляем в кластер, удаляем из списка:
-                Map.copyOf(indices)
-                        .get(number)
-                        .stream()
-                        .findFirst()
-                        .ifPresent(Xi -> {
-                            clusters.get(number).add(new ArrayList<>());
-                            clusters.get(number).get(finalI).add(Xi);
-                            indices.get(number).remove(Xi);
-                        });
-
                 try {
-
+                    clusters.get(number).get(finalI);
+                } catch (IndexOutOfBoundsException e) {
+                    // Берем самый первый признак из списка оставшихся признаков, добавляем в кластер, удаляем из списка:
+                    Map.copyOf(indices)
+                            .get(number)
+                            .stream()
+                            .findFirst()
+                            .ifPresent(Xi -> {
+                                clusters.get(number).add(new ArrayList<>());
+                                clusters.get(number).get(finalI).add(Xi);
+                                indices.get(number).remove(Xi);
+                            });
+                }
+                try {
                     AtomicInteger sizeOfCluster = new AtomicInteger(clusters.get(number).get(i).size());
-
-                    // Пробегаем динамически кластер, одновременно добавляя в него новый признаки:
+                    AtomicBoolean isIndicesAdded = new AtomicBoolean(false);
+                    // Пробегаем динамически кластер, одновременно добавляя в него новые признаки:
                     for (int indInCluster = 0; indInCluster < sizeOfCluster.get(); indInCluster++) {
-
                         for (Map<String, Double> map : listOfIndices) {
-
                             int finalIndInCluster = indInCluster;
-
                             int finalI1 = i;
                             map.forEach((metric, value) -> {
                                 if (
@@ -400,15 +398,12 @@ public class ImageRecognition {
                                                 .get(number)
                                                 .get(finalI1)
                                                 .contains(metric.split("\\|")[1])
-
                                                 && clusters.
                                                 get(number).
                                                 get(finalI1)
                                                 .get(finalIndInCluster)
                                                 .equals(metric.split("\\|")[0])
-
                                                 && value < maxMetric
-
                                                 && indices
                                                 .get(number)
                                                 .contains(metric.split("\\|")[1])
@@ -416,13 +411,23 @@ public class ImageRecognition {
                                     clusters.get(number).get(finalI1).add(metric.split("\\|")[1]);
                                     indices.get(number).remove(metric.split("\\|")[1]);
                                     sizeOfCluster.set(clusters.get(number).get(finalI1).size());
+                                    isIndicesAdded.set(true);
                                 }
                             });
                         }
                     }
-
+                    if (!isIndicesAdded.get()) {
+                        Map.copyOf(indices)
+                                .get(number)
+                                .stream()
+                                .findFirst()
+                                .ifPresent(Xi -> {
+                                    clusters.get(number).add(new ArrayList<>());
+                                    clusters.get(number).get(finalI).add(Xi);
+                                    indices.get(number).remove(Xi);
+                                });
+                    }
                     i++;
-
                 } catch (IndexOutOfBoundsException ignored) {
                 }
             }
