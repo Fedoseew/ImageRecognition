@@ -93,7 +93,7 @@ public class ImageRecognition {
 
             resultSet.set(DatabaseUtils.selectQuery(queries[countOfQuery]));
 
-            /* Для уменьшения нагрузки кэшируем все строки из столбоцов source и isTrue в массивы соответственно: */
+            /* Для уменьшения нагрузки кэшируем все строки из столбцов source и isTrue в массивы соответственно: */
             List<String> sourceColumnData = new ArrayList<>();
             List<String> isTrueColumnData = new ArrayList<>();
 
