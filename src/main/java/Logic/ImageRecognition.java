@@ -390,23 +390,14 @@ public class ImageRecognition {
                     // Пробегаем динамически кластер, одновременно добавляя в него новые признаки:
                     for (int indInCluster = 0; indInCluster < sizeOfCluster.get(); indInCluster++) {
                         for (Map<String, Double> map : listOfIndices) {
-                            int finalIndInCluster = indInCluster;
                             int finalI1 = i;
+                            int finalIndInCluster = indInCluster;
                             map.forEach((metric, value) -> {
                                 if (
-                                        !clusters
-                                                .get(number)
-                                                .get(finalI1)
-                                                .contains(metric.split("\\|")[1])
-                                                && clusters.
-                                                get(number).
-                                                get(finalI1)
-                                                .get(finalIndInCluster)
-                                                .equals(metric.split("\\|")[0])
+                                        !clusters.get(number).get(finalI1).contains(metric.split("\\|")[1])
+                                                && clusters.get(number).get(finalI).get(finalIndInCluster).equals(metric.split("\\|")[0])
                                                 && value < maxMetric
-                                                && indices
-                                                .get(number)
-                                                .contains(metric.split("\\|")[1])
+                                                && indices.get(number).contains(metric.split("\\|")[1])
                                 ) {
                                     clusters.get(number).get(finalI1).add(metric.split("\\|")[1]);
                                     indices.get(number).remove(metric.split("\\|")[1]);
@@ -423,7 +414,7 @@ public class ImageRecognition {
                                 .findFirst()
                                 .ifPresent(Xi -> {
                                     clusters.get(number).add(new ArrayList<>());
-                                    clusters.get(number).get(finalI).add(Xi);
+                                    clusters.get(number).get(finalI + 1).add(Xi);
                                     indices.get(number).remove(Xi);
                                 });
                     }
